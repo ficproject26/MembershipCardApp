@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Agent {
+  id            String         @id @default(uuid())
+  name          String
+  email         String         @unique
+  phoneNumber   String         @unique
+  agentCode     String         @unique
+  password      String?
+  membership    String         @default("Silver") // Silver, Gold, Diamond, Platinum
+  referredById  String?        
+  referredBy    Agent?         @relation("Referrals", fields: [referredById], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  referrals     Agent[]        @relation("Referrals")
+  walletBalance Float          @default(0.0)
+  totalEarnings Float          @default(0.0)
+  kycStatus         String         @default("NotSubmitted") // NotSubmitted, Pending, Approved, Rejected
+  aadhaarNumber     String?
+  panNumber         String?
+  bankAccountNumber String?
+  bankIfscCode      String?
+  bankAccountName   String?
+  photoUrl          String?
+  dateJoined    DateTime       @default(now())
+
+  leads         Lead[]
+  transactions  Transaction[]
+}
+
+model Lead {
+  id              String     @id @default(uuid())
+  agentId         String     
+  agent           Agent      @relation(fields: [agentId], references: [id])
+  customerName    String?
+  customerPhone   String?
+  serviceType     String
+  details         String     @default("{}") // Store JSON string since SQLite doesn't natively support JSON
+  status          String     @default("Pending") // Pending, Approved, Stage1Pending...
+  rejectionReason String?
+  bankMessage     String?
+  dateCreated     DateTime   @default(now())
+}
+
+model Transaction {
+  id          String            @id @default(uuid())
+  agentId     String            
+  agent       Agent             @relation(fields: [agentId], references: [id])
+  amount      Float
+  type        String            // Withdrawal, Upgrade, DirectCommission...
+  status      String            @default("Pending") // Pending, Success, Rejected
+  description String
+  date        DateTime          @default(now())
+}
+
+model MembershipPricing {
+  id       String         @id @default(uuid())
+  tier     String         @unique
+  price    Float
+  benefits String         // Comma separated list
+}
+
+model CommissionConfig {
+  id           String @id @default(uuid())
+  serviceType  String @unique
+  directRate   Float
+  indirectRate Float
+}
+
+model Staff {
+  id          String   @id @default(uuid())
+  name        String
+  email       String   @unique
+  phoneNumber String   @unique
+  role        String   // HR, KYC, CreditCardTL, LoanTL, etc.
+  department  String?
+  password    String?
+  dateJoined  DateTime @default(now())
+}
