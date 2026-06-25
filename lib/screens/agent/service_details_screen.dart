@@ -37,7 +37,9 @@ class ServiceDetailsScreen extends StatelessWidget {
         {'label': 'Rejected', 'count': rejectedCount, 'color': Colors.red},
       ],
       'Loan': [
-        {'label': 'Applied', 'count': agentLeads.where((l) => l.status == LeadStatus.Pending).length, 'color': Colors.blue},
+        {'label': 'Pending', 'count': agentLeads.where((l) => l.status == LeadStatus.Pending).length, 'color': Colors.blue},
+        {'label': 'Verify', 'count': agentLeads.where((l) => l.status == LeadStatus.Stage1Approved).length, 'color': Colors.amber},
+        {'label': 'Bank', 'count': agentLeads.where((l) => l.status == LeadStatus.Stage2Approved).length, 'color': Colors.orange},
         {'label': 'Approved', 'count': approvedCount, 'color': Colors.green},
         {'label': 'Disbursed', 'count': dispatchedCount, 'color': Colors.teal},
         {'label': 'Rejected', 'count': rejectedCount, 'color': Colors.red},
@@ -51,13 +53,16 @@ class ServiceDetailsScreen extends StatelessWidget {
       ],
       'Insurance': [
         {'label': 'Submitted', 'count': agentLeads.where((l) => l.status == LeadStatus.Pending).length, 'color': Colors.blue},
-        {'label': 'Verified', 'count': agentLeads.where((l) => l.status == LeadStatus.Stage1Approved).length, 'color': Colors.amber},
+        {'label': 'KYC', 'count': agentLeads.where((l) => l.status == LeadStatus.Stage1Approved).length, 'color': Colors.amber},
+        {'label': 'Underwriting', 'count': agentLeads.where((l) => l.status == LeadStatus.Stage2Approved).length, 'color': Colors.orange},
         {'label': 'Active', 'count': approvedCount, 'color': Colors.green},
         {'label': 'Rejected', 'count': rejectedCount, 'color': Colors.red},
       ],
       'IT Projects': [
         {'label': 'Proposed', 'count': agentLeads.where((l) => l.status == LeadStatus.Pending).length, 'color': Colors.blue},
-        {'label': 'In Progress', 'count': agentLeads.where((l) => l.status == LeadStatus.Stage1Approved).length, 'color': Colors.amber},
+        {'label': 'Requirements', 'count': agentLeads.where((l) => l.status == LeadStatus.Stage1Approved).length, 'color': Colors.amber},
+        {'label': 'In Development', 'count': agentLeads.where((l) => l.status == LeadStatus.Stage2Approved).length, 'color': Colors.orange},
+        {'label': 'Testing', 'count': agentLeads.where((l) => l.status == LeadStatus.Stage3Approved).length, 'color': Colors.purple},
         {'label': 'Delivered', 'count': approvedCount, 'color': Colors.green},
         {'label': 'Cancelled', 'count': rejectedCount, 'color': Colors.red},
       ],
@@ -146,9 +151,27 @@ class ServiceDetailsScreen extends StatelessWidget {
                           DataColumn(label: Text('Date', style: TextStyle(fontWeight: FontWeight.bold))),
                         ],
                         rows: agentLeads.map((lead) {
+                          String statusText = lead.status.name;
+                          if (service.title == 'Loan') {
+                            if (lead.status == LeadStatus.Stage1Approved) statusText = 'Doc Verification';
+                            else if (lead.status == LeadStatus.Stage2Approved) statusText = 'Bank Processing';
+                          } else if (service.title == 'Insurance') {
+                            if (lead.status == LeadStatus.Stage1Approved) statusText = 'KYC Verification';
+                            else if (lead.status == LeadStatus.Stage2Approved) statusText = 'Underwriting';
+                            else if (lead.status == LeadStatus.Approved) statusText = 'Active';
+                          } else if (service.title == 'IT Projects') {
+                            if (lead.status == LeadStatus.Stage1Approved) statusText = 'Requirements';
+                            else if (lead.status == LeadStatus.Stage2Approved) statusText = 'In Development';
+                            else if (lead.status == LeadStatus.Stage3Approved) statusText = 'Testing';
+                            else if (lead.status == LeadStatus.Approved) statusText = 'Delivered';
+                          }
+                          if (statusText == lead.status.name) {
+                            statusText = statusText.replaceAll('Stage1', 'Stage 1 ').replaceAll('Stage2', 'Stage 2 ').replaceAll('Stage3', 'Stage 3 ');
+                          }
+
                           return DataRow(cells: [
                             DataCell(Text(lead.customerName?.isNotEmpty == true ? lead.customerName! : 'Customer (Stage 1)')),
-                            DataCell(Text(lead.status.name)),
+                            DataCell(Text(statusText)),
                             DataCell(Text(lead.dateCreated.toString().split(' ')[0])),
                           ]);
                         }).toList(),
@@ -404,8 +427,6 @@ class ServiceDetailsScreen extends StatelessWidget {
 
     if (service.title == 'Loan') {
       controllers['Loan Amount'] = TextEditingController();
-      controllers['Monthly Income'] = TextEditingController();
-      controllers['PAN Card'] = TextEditingController();
       dropdownLabel = 'Type of Loan';
       dropdownOptions = ['Personal Loan', 'Home Loan', 'Business Loan', 'Car Loan', 'Gold Loan'];
       dropdownValue = dropdownOptions.first;
@@ -413,16 +434,11 @@ class ServiceDetailsScreen extends StatelessWidget {
       controllers['Desired Role'] = TextEditingController();
       controllers['Employment History'] = TextEditingController();
     } else if (service.title == 'Insurance') {
-      controllers['Coverage Amount'] = TextEditingController();
-      controllers['Current Age'] = TextEditingController();
-      controllers['City'] = TextEditingController();
       dropdownLabel = 'Insurance Category';
       dropdownOptions = ['Term Life Insurance', 'Health Insurance', 'Motor Insurance', 'Corporate Health'];
       dropdownValue = dropdownOptions.first;
     } else if (service.title == 'IT Projects') {
       controllers['Company Name'] = TextEditingController();
-      controllers['Approximate Budget'] = TextEditingController();
-      controllers['Expected Timeline'] = TextEditingController();
       dropdownLabel = 'Project Type';
       dropdownOptions = ['Web Application', 'Mobile App', 'Cloud Infrastructure', 'UI/UX Design', 'Custom Software'];
       dropdownValue = dropdownOptions.first;

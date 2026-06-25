@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-enum LeadStatus { Stage1Pending, Stage1Approved, Stage1Rejected, Stage2Pending, Stage2Approved, Stage2Rejected, Stage3Pending, Approved, Rejected, Dispatched, Pending, Process, Followup, Converted, Selected }
+enum LeadStatus { Stage1Pending, Stage1Approved, Stage1Rejected, Stage2Pending, Stage2Approved, Stage2Rejected, Stage3Pending, Stage3Approved, Stage3Rejected, Approved, Rejected, Dispatched, Pending, Process, Followup, Converted, Selected }
 
 class LeadModel {
   final String id;

@@ -1179,13 +1179,34 @@ class _AgentDashboardTabState extends State<AgentDashboardTab>
                   color: statusColor.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: Text(
-                  lead.status.name,
-                  style: TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
-                    color: statusColor,
-                  ),
+                child: Builder(
+                  builder: (context) {
+                    String badgeText = lead.status.name;
+                    if (lead.serviceType == 'Loan') {
+                      if (lead.status == LeadStatus.Stage1Approved) badgeText = 'Doc Verification';
+                      else if (lead.status == LeadStatus.Stage2Approved) badgeText = 'Bank Processing';
+                    } else if (lead.serviceType == 'Insurance') {
+                      if (lead.status == LeadStatus.Stage1Approved) badgeText = 'KYC Verification';
+                      else if (lead.status == LeadStatus.Stage2Approved) badgeText = 'Underwriting';
+                      else if (lead.status == LeadStatus.Approved) badgeText = 'Active';
+                    } else if (lead.serviceType == 'IT Projects') {
+                      if (lead.status == LeadStatus.Stage1Approved) badgeText = 'Requirements';
+                      else if (lead.status == LeadStatus.Stage2Approved) badgeText = 'In Development';
+                      else if (lead.status == LeadStatus.Stage3Approved) badgeText = 'Testing';
+                      else if (lead.status == LeadStatus.Approved) badgeText = 'Delivered';
+                    }
+                    if (badgeText == lead.status.name) {
+                      badgeText = badgeText.replaceAll('Stage1', 'Stage 1 ').replaceAll('Stage2', 'Stage 2 ').replaceAll('Stage3', 'Stage 3 ');
+                    }
+                    return Text(
+                      badgeText,
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        color: statusColor,
+                      ),
+                    );
+                  },
                 ),
               ),
               const SizedBox(height: 4),

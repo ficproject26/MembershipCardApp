@@ -1,19 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_state_provider.dart';
 import '../../models/lead_model.dart';
 import '../../models/staff_model.dart';
+import '../../models/user_model.dart';
 import '../../widgets/glass_card.dart';
 
 class StaffDashboardFactory {
   static Widget buildDashboardForRole(StaffRole role, bool isDark) {
     switch (role) {
       case StaffRole.creditCardTL:
-        return _GenericDashboard(title: 'SBI Credit Card TL Dashboard', icon: Icons.credit_card, isDark: isDark);
+        return _TlLeadsDashboard(title: 'Credit Card TL Dashboard', serviceType: 'Credit Card', isDark: isDark);
       case StaffRole.loanTL:
-        return _GenericDashboard(title: 'Loan TL Dashboard', icon: Icons.account_balance, isDark: isDark);
+        return _TlLeadsDashboard(title: 'Loan TL Dashboard', serviceType: 'Loan', isDark: isDark);
       case StaffRole.insuranceTL:
-        return _GenericDashboard(title: 'Insurance TL Dashboard', icon: Icons.health_and_safety, isDark: isDark);
+        return _TlLeadsDashboard(title: 'Insurance TL Dashboard', serviceType: 'Insurance', isDark: isDark);
       case StaffRole.itProjectManager:
         return _GenericDashboard(title: 'IT Project Manager Dashboard', icon: Icons.developer_board, isDark: isDark);
       case StaffRole.hr:
@@ -704,6 +706,338 @@ class _KycDashboardState extends State<_KycDashboard> {
               color: isDark ? Colors.white : Colors.black87,
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TlLeadsDashboard extends StatefulWidget {
+  final String title;
+  final String serviceType;
+  final bool isDark;
+
+  const _TlLeadsDashboard({
+    Key? key,
+    required this.title,
+    required this.serviceType,
+    required this.isDark,
+  }) : super(key: key);
+
+  @override
+  State<_TlLeadsDashboard> createState() => _TlLeadsDashboardState();
+}
+
+class _TlLeadsDashboardState extends State<_TlLeadsDashboard> {
+  String _searchQuery = '';
+
+  @override
+  Widget build(BuildContext context) {
+    final state = Provider.of<AppStateProvider>(context);
+    final allLeads = state.leads;
+
+    // TL sees leads that match their serviceType and are in the workflow pipeline
+    final pendingLeads = allLeads.where((l) => 
+      l.serviceType == widget.serviceType &&
+      (l.status == LeadStatus.Pending || 
+       l.status == LeadStatus.Stage1Approved || 
+       l.status == LeadStatus.Stage2Approved || 
+       l.status == LeadStatus.Stage3Approved ||
+       (l.serviceType == 'Loan' && l.status == LeadStatus.Approved))
+    ).toList();
+
+    // Search filter
+    final displayedQueue = pendingLeads.where((l) {
+      if (_searchQuery.isEmpty) return true;
+      final query = _searchQuery.toLowerCase();
+      final cName = (l.customerName ?? '').toLowerCase();
+      final aCode = l.agentCode.toLowerCase();
+      final leadId = l.id.toLowerCase();
+      return cName.contains(query) || aCode.contains(query) || leadId.contains(query);
+    }).toList();
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blueAccent.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.leaderboard, size: 28, color: Colors.blueAccent),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.title,
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: widget.isDark ? Colors.white : const Color(0xFF1A3B6E)),
+                    ),
+                    Text(
+                      'Review and process ${widget.serviceType} applications',
+                      style: TextStyle(fontSize: 14, color: widget.isDark ? Colors.white54 : Colors.black54),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 32),
+          // Search Bar
+          TextField(
+            style: TextStyle(color: widget.isDark ? Colors.white : Colors.black),
+            decoration: InputDecoration(
+              hintText: 'Search by Customer Name, Agent ID, or Lead ID...',
+              hintStyle: TextStyle(color: widget.isDark ? Colors.white54 : Colors.black54),
+              prefixIcon: Icon(Icons.search, color: widget.isDark ? Colors.white54 : Colors.black54),
+              filled: true,
+              fillColor: widget.isDark ? const Color(0xFF1E212D) : Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+            ),
+            onChanged: (val) => setState(() => _searchQuery = val),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Action Required (${displayedQueue.length})',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: widget.isDark ? Colors.white : const Color(0xFF1A3B6E)),
+          ),
+          const SizedBox(height: 16),
+          if (displayedQueue.isEmpty)
+            Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32.0),
+                child: Column(
+                  children: [
+                    Icon(Icons.check_circle_outline, size: 64, color: Colors.green.withOpacity(0.5)),
+                    const SizedBox(height: 16),
+                    Text('No pending ${widget.serviceType} leads! Great job.', style: TextStyle(color: widget.isDark ? Colors.white70 : Colors.black87, fontSize: 16)),
+                  ],
+                ),
+              ),
+            )
+          else
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: displayedQueue.length,
+              itemBuilder: (context, index) {
+                final lead = displayedQueue[index];
+                return Card(
+                  color: widget.isDark ? const Color(0xFF1E212D) : Colors.white,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  elevation: 2,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Lead ID: ${lead.id}',
+                                style: TextStyle(fontWeight: FontWeight.bold, color: widget.isDark ? Colors.white : Colors.black87),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Builder(
+                                builder: (context) {
+                                  String badgeText = 'Pending';
+                                  if (lead.serviceType == 'Loan') {
+                                    if (lead.status == LeadStatus.Stage1Approved) badgeText = 'Doc Verification';
+                                    else if (lead.status == LeadStatus.Stage2Approved) badgeText = 'Bank Processing';
+                                    else if (lead.status == LeadStatus.Approved) badgeText = 'Approved';
+                                  } else if (lead.serviceType == 'Insurance') {
+                                    if (lead.status == LeadStatus.Stage1Approved) badgeText = 'KYC Verification';
+                                    else if (lead.status == LeadStatus.Stage2Approved) badgeText = 'Underwriting';
+                                    else if (lead.status == LeadStatus.Approved) badgeText = 'Active';
+                                  } else if (lead.serviceType == 'IT Projects') {
+                                    if (lead.status == LeadStatus.Stage1Approved) badgeText = 'Requirements';
+                                    else if (lead.status == LeadStatus.Stage2Approved) badgeText = 'In Development';
+                                    else if (lead.status == LeadStatus.Stage3Approved) badgeText = 'Testing';
+                                    else if (lead.status == LeadStatus.Approved) badgeText = 'Delivered';
+                                  }
+                                  else if (lead.status.name.contains('Pending')) badgeText = lead.status.name.replaceAll('Stage1', 'Stage 1 ').replaceAll('Stage2', 'Stage 2 ').replaceAll('Stage3', 'Stage 3 ');
+                                  else badgeText = lead.status.name;
+
+                                  return Text(
+                                    badgeText,
+                                    style: const TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.bold),
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text('Submitted by Agent: ${lead.agentCode}', style: TextStyle(fontSize: 12, color: widget.isDark ? Colors.white70 : Colors.black87)),
+                        const SizedBox(height: 8),
+                        const Divider(),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text('Customer Details:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: widget.isDark ? Colors.white : Colors.black)),
+                            IconButton(
+                              icon: const Icon(Icons.copy, size: 18, color: Colors.blue),
+                              onPressed: () {
+                                final buffer = StringBuffer();
+                                buffer.writeln('Lead ID: ${lead.id}');
+                                buffer.writeln('Agent Code: ${lead.agentCode}');
+                                if (lead.customerName != null && lead.customerName!.isNotEmpty) {
+                                  buffer.writeln('Customer: ${lead.customerName} (${lead.customerPhone})');
+                                }
+                                for (var e in lead.details.entries) {
+                                  buffer.writeln('${e.key}: ${e.value}');
+                                }
+                                Clipboard.setData(ClipboardData(text: buffer.toString()));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Lead details copied to clipboard!')),
+                                );
+                              },
+                              tooltip: 'Copy Details',
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        if (lead.customerName != null && lead.customerName!.isNotEmpty) ...[
+                          Row(
+                            children: [
+                              const Icon(Icons.person, size: 16, color: Colors.grey),
+                              const SizedBox(width: 8),
+                              Text('${lead.customerName} (${lead.customerPhone})', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: widget.isDark ? Colors.white : Colors.black87)),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                        // Dynamically render all submitted details (PAN, Type of Loan, etc)
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: lead.details.entries.map((e) {
+                            return Container(
+                              width: MediaQuery.of(context).size.width > 600 ? 250 : double.infinity,
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: widget.isDark ? const Color(0xFF2C3140) : Colors.blue.withOpacity(0.05),
+                                border: Border.all(color: widget.isDark ? Colors.transparent : Colors.blue.withOpacity(0.15)),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    e.key,
+                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: widget.isDark ? const Color(0xFFFFC107) : const Color(0xFF1A3B6E)),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    e.value.isEmpty ? 'N/A' : e.value,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: widget.isDark ? Colors.white : Colors.black87,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          child: Divider(height: 1),
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            OutlinedButton.icon(
+                              onPressed: () {
+                                state.verifyLead(lead.id, LeadStatus.Rejected, reason: 'Rejected by TL');
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Lead ${lead.id} rejected.')),
+                                );
+                              },
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: Colors.redAccent,
+                                side: const BorderSide(color: Colors.redAccent),
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                              ),
+                              icon: const Icon(Icons.close, size: 18),
+                              label: const Text('Reject'),
+                            ),
+                            const SizedBox(width: 12),
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                LeadStatus nextStatus = LeadStatus.Stage1Approved;
+                                String msg = 'Verified Documents';
+                                
+                                if (lead.serviceType == 'Insurance') {
+                                  msg = 'KYC Verified';
+                                  if (lead.status == LeadStatus.Stage1Approved) { nextStatus = LeadStatus.Stage2Approved; msg = 'Sent to Underwriting'; }
+                                  else if (lead.status == LeadStatus.Stage2Approved) { nextStatus = LeadStatus.Approved; msg = 'Policy Activated'; }
+                                } else if (lead.serviceType == 'IT Projects') {
+                                  msg = 'Requirements Gathered';
+                                  if (lead.status == LeadStatus.Stage1Approved) { nextStatus = LeadStatus.Stage2Approved; msg = 'Moved to Development'; }
+                                  else if (lead.status == LeadStatus.Stage2Approved) { nextStatus = LeadStatus.Stage3Approved; msg = 'Sent to Testing'; }
+                                  else if (lead.status == LeadStatus.Stage3Approved) { nextStatus = LeadStatus.Approved; msg = 'Project Delivered'; }
+                                } else {
+                                  if (lead.status == LeadStatus.Stage1Approved) { nextStatus = LeadStatus.Stage2Approved; msg = 'Sent to Bank'; }
+                                  else if (lead.status == LeadStatus.Stage2Approved) { nextStatus = LeadStatus.Approved; msg = 'Final Approval'; }
+                                  else if (lead.status == LeadStatus.Approved) { nextStatus = LeadStatus.Dispatched; msg = 'Marked as Disbursed'; }
+                                }
+                                
+                                state.verifyLead(lead.id, nextStatus);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Lead ${lead.id}: $msg!')),
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                              ),
+                              icon: const Icon(Icons.check, size: 18),
+                              label: Text(
+                                lead.serviceType == 'Insurance' ? 
+                                  (lead.status == LeadStatus.Pending ? 'Verify KYC' : 
+                                  (lead.status == LeadStatus.Stage1Approved ? 'Send to Underwriting' : 'Activate Policy')) 
+                                : lead.serviceType == 'IT Projects' ? 
+                                  (lead.status == LeadStatus.Pending ? 'Start Requirements' : 
+                                  (lead.status == LeadStatus.Stage1Approved ? 'Start Development' : 
+                                  (lead.status == LeadStatus.Stage2Approved ? 'Send to Testing' : 'Deliver Project')))
+                                :
+                                  (lead.status == LeadStatus.Pending ? 'Verify Documents' : 
+                                  (lead.status == LeadStatus.Stage1Approved ? 'Send to Bank' : 
+                                  (lead.status == LeadStatus.Stage2Approved ? 'Final Approval' : 'Mark Disbursed')))
+                              ),
+                            ),
+                          ],
+                        )
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
         ],
       ),
     );

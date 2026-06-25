@@ -555,7 +555,14 @@ class AppStateProvider extends ChangeNotifier {
       return;
     }
 
-    if (newStatus == LeadStatus.Approved) {
+    bool shouldPayCommission = false;
+    if (lead.serviceType == 'Loan') {
+      if (newStatus == LeadStatus.Dispatched) shouldPayCommission = true;
+    } else {
+      if (newStatus == LeadStatus.Approved) shouldPayCommission = true;
+    }
+
+    if (shouldPayCommission) {
       CommissionConfig commission = _commissions.firstWhere(
         (c) => c.serviceType == lead.serviceType,
         orElse: () => CommissionConfig(serviceType: lead.serviceType, directRate: 0.05, indirectRate: 0.01),
