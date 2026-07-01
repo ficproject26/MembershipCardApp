@@ -42,6 +42,18 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     return (this.client as any).staff;
   }
 
+  get message() {
+    return (this.client as any).message;
+  }
+
+  get statusUpdate() {
+    return (this.client as any).statusUpdate;
+  }
+
+  get kycDocument() {
+    return (this.client as any).kycDocument;
+  }
+
   async onModuleInit() {
     // No-op for SQLite adapter
   }

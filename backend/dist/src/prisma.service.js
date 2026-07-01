@@ -76,6 +76,15 @@ let PrismaService = class PrismaService {
     get staff() {
         return this.client.staff;
     }
+    get message() {
+        return this.client.message;
+    }
+    get statusUpdate() {
+        return this.client.statusUpdate;
+    }
+    get kycDocument() {
+        return this.client.kycDocument;
+    }
     async onModuleInit() {
     }
     async onModuleDestroy() {

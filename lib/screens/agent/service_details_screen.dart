@@ -4,13 +4,52 @@ import '../../providers/app_state_provider.dart';
 import '../../models/lead_model.dart';
 import 'services_tab.dart'; // To get ServiceItem
 
-class ServiceDetailsScreen extends StatelessWidget {
+class ServiceDetailsScreen extends StatefulWidget {
   final ServiceItem service;
 
   const ServiceDetailsScreen({Key? key, required this.service}) : super(key: key);
 
   @override
+  State<ServiceDetailsScreen> createState() => _ServiceDetailsScreenState();
+}
+
+class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
+  String _selectedFilter = 'All';
+
+  String _getStatusText(LeadModel lead, String serviceTitle) {
+    String statusText = lead.status.name;
+    if (serviceTitle == 'Loan') {
+      if (lead.status == LeadStatus.Pending) statusText = 'Pending';
+      else if (lead.status == LeadStatus.Stage1Approved) statusText = 'Verify';
+      else if (lead.status == LeadStatus.Stage2Approved) statusText = 'Bank';
+      else if (lead.status == LeadStatus.Dispatched) statusText = 'Disbursed';
+    } else if (serviceTitle == 'Insurance') {
+      if (lead.status == LeadStatus.Pending) statusText = 'Submitted';
+      else if (lead.status == LeadStatus.Stage1Approved) statusText = 'KYC';
+      else if (lead.status == LeadStatus.Stage2Approved) statusText = 'Underwriting';
+      else if (lead.status == LeadStatus.Approved) statusText = 'Active';
+    } else if (serviceTitle == 'IT Projects') {
+      if (lead.status == LeadStatus.Pending) statusText = 'Proposed';
+      else if (lead.status == LeadStatus.Stage1Approved) statusText = 'Requirements';
+      else if (lead.status == LeadStatus.Stage2Approved) statusText = 'In Development';
+      else if (lead.status == LeadStatus.Stage3Approved) statusText = 'Testing';
+      else if (lead.status == LeadStatus.Approved) statusText = 'Delivered';
+      else if (lead.status == LeadStatus.Rejected || lead.status == LeadStatus.Stage1Rejected) statusText = 'Cancelled';
+    } else if (serviceTitle == 'BPO Services') {
+      if (lead.status == LeadStatus.Pending) statusText = 'Submitted';
+      else if (lead.status == LeadStatus.Stage1Approved) statusText = 'Training';
+      else if (lead.status == LeadStatus.Approved) statusText = 'Live';
+      else if (lead.status == LeadStatus.Rejected) statusText = 'Dropped';
+    }
+    if (statusText == lead.status.name) {
+      statusText = statusText.replaceAll('Stage1', 'Stage 1 ').replaceAll('Stage2', 'Stage 2 ').replaceAll('Stage3', 'Stage 3 ');
+    }
+    return statusText;
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final service = widget.service;
     final state = Provider.of<AppStateProvider>(context);
     final isDark = state.isDarkMode;
     
@@ -74,12 +113,21 @@ class ServiceDetailsScreen extends StatelessWidget {
       ],
     };
 
-    final kpis = serviceKpis[service.title] ?? [
+    List<Map<String, dynamic>> rawKpis = serviceKpis[service.title] ?? [
       {'label': 'Pending', 'count': agentLeads.where((l) => l.status == LeadStatus.Pending).length, 'color': Colors.blue},
       {'label': 'Approved', 'count': approvedCount, 'color': Colors.green},
       {'label': 'Dispatched', 'count': dispatchedCount, 'color': Colors.teal},
       {'label': 'Rejected', 'count': rejectedCount, 'color': Colors.red},
     ];
+
+    final kpis = [
+      {'label': 'All', 'count': agentLeads.length, 'color': Colors.blueAccent},
+      ...rawKpis,
+    ];
+
+    final filteredLeads = _selectedFilter == 'All' 
+      ? agentLeads 
+      : agentLeads.where((l) => _getStatusText(l, service.title) == _selectedFilter || (l.status.name == _selectedFilter)).toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -137,9 +185,9 @@ class ServiceDetailsScreen extends StatelessWidget {
           ),
           const Divider(),
           Expanded(
-            child: agentLeads.isEmpty
+            child: filteredLeads.isEmpty
                 ? Center(
-                    child: Text('No referrals added yet for ${service.title}.'),
+                    child: Text('No referrals found for $_selectedFilter.'),
                   )
                 : SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
@@ -150,27 +198,11 @@ class ServiceDetailsScreen extends StatelessWidget {
                           DataColumn(label: Text('Status', style: TextStyle(fontWeight: FontWeight.bold))),
                           DataColumn(label: Text('Date', style: TextStyle(fontWeight: FontWeight.bold))),
                         ],
-                        rows: agentLeads.map((lead) {
-                          String statusText = lead.status.name;
-                          if (service.title == 'Loan') {
-                            if (lead.status == LeadStatus.Stage1Approved) statusText = 'Doc Verification';
-                            else if (lead.status == LeadStatus.Stage2Approved) statusText = 'Bank Processing';
-                          } else if (service.title == 'Insurance') {
-                            if (lead.status == LeadStatus.Stage1Approved) statusText = 'KYC Verification';
-                            else if (lead.status == LeadStatus.Stage2Approved) statusText = 'Underwriting';
-                            else if (lead.status == LeadStatus.Approved) statusText = 'Active';
-                          } else if (service.title == 'IT Projects') {
-                            if (lead.status == LeadStatus.Stage1Approved) statusText = 'Requirements';
-                            else if (lead.status == LeadStatus.Stage2Approved) statusText = 'In Development';
-                            else if (lead.status == LeadStatus.Stage3Approved) statusText = 'Testing';
-                            else if (lead.status == LeadStatus.Approved) statusText = 'Delivered';
-                          }
-                          if (statusText == lead.status.name) {
-                            statusText = statusText.replaceAll('Stage1', 'Stage 1 ').replaceAll('Stage2', 'Stage 2 ').replaceAll('Stage3', 'Stage 3 ');
-                          }
+                        rows: filteredLeads.map((lead) {
+                          String statusText = _getStatusText(lead, service.title);
 
                           return DataRow(cells: [
-                            DataCell(Text(lead.customerName?.isNotEmpty == true ? lead.customerName! : 'Customer (Stage 1)')),
+                            DataCell(Text(lead.customerName?.isNotEmpty == true ? lead.customerName! : 'Customer')),
                             DataCell(Text(statusText)),
                             DataCell(Text(lead.dateCreated.toString().split(' ')[0])),
                           ]);
@@ -417,6 +449,7 @@ class ServiceDetailsScreen extends StatelessWidget {
     // Shared controllers
     final nameController = TextEditingController();
     final phoneController = TextEditingController();
+    final emailController = TextEditingController();
     String? selectedResume;
 
     // Specific controllers based on service
@@ -511,17 +544,30 @@ class ServiceDetailsScreen extends StatelessWidget {
                       const SizedBox(height: 10),
                     ],
                     ...controllers.entries.map((entry) {
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 10.0),
-                        child: TextField(
-                          controller: entry.value,
-                          keyboardType: entry.key.contains('Amount') || entry.key.contains('Age') || entry.key.contains('Income') || entry.key.contains('Years') || entry.key.contains('Agents') || entry.key.contains('Duration')
-                              ? TextInputType.number : TextInputType.text,
-                          decoration: InputDecoration(
-                            labelText: entry.key,
-                            isDense: true,
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 10.0),
+                            child: TextField(
+                              controller: entry.value,
+                              keyboardType: entry.key.contains('Amount') || entry.key.contains('Age') || entry.key.contains('Income') || entry.key.contains('Years') || entry.key.contains('Agents') || entry.key.contains('Duration')
+                                  ? TextInputType.number : TextInputType.text,
+                              decoration: InputDecoration(
+                                labelText: entry.key,
+                                isDense: true,
+                              ),
+                            ),
                           ),
-                        ),
+                          if (service.title == 'Loan' && entry.key == 'Loan Amount') ...[
+                            TextField(
+                              controller: emailController,
+                              keyboardType: TextInputType.emailAddress,
+                              decoration: const InputDecoration(labelText: 'Customer Email Address', isDense: true),
+                            ),
+                            const SizedBox(height: 10),
+                          ],
+                        ],
                       );
                     }).toList(),
                   ],
@@ -562,6 +608,7 @@ class ServiceDetailsScreen extends StatelessWidget {
                     state.submitLead(
                       customerName: nameController.text.trim(),
                       customerPhone: phoneController.text.trim(),
+                      customerEmail: service.title == 'Loan' ? emailController.text.trim() : null,
                       serviceType: service.title,
                       details: finalDetails,
                       status: LeadStatus.Pending,
@@ -586,28 +633,19 @@ class ServiceDetailsScreen extends StatelessWidget {
   }
 
   Widget _buildKpiCard(BuildContext context, String title, int count, Color color) {
+    bool isSelected = _selectedFilter == title;
     return GestureDetector(
       onTap: () {
-        showDialog(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            title: Text('$title Leads'),
-            content: Text('You have $count leads currently in the $title stage.'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('OK'),
-              )
-            ],
-          ),
-        );
+        setState(() {
+          _selectedFilter = title;
+        });
       },
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
+          color: isSelected ? color.withOpacity(0.3) : color.withOpacity(0.1),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: color.withOpacity(0.3)),
+          border: Border.all(color: isSelected ? color : color.withOpacity(0.3), width: isSelected ? 2 : 1),
         ),
         child: Column(
           children: [

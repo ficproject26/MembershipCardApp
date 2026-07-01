@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { LeadService } from './lead.service';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
@@ -13,8 +13,11 @@ export class LeadController {
   }
 
   @Get()
-  findAll() {
-    return this.leadService.findAll();
+  findAll(
+    @Query('status') status?: string,
+    @Query('serviceType') serviceType?: string,
+  ) {
+    return this.leadService.findAll(status, serviceType);
   }
 
   @Get('agent/:agentId')

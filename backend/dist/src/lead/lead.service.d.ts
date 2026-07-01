@@ -3,7 +3,7 @@ export declare class LeadService {
     private prisma;
     constructor(prisma: PrismaService);
     create(createLeadDto: any): Promise<any>;
-    findAll(): Promise<any>;
+    findAll(status?: string, serviceType?: string): Promise<any>;
     findOne(id: string): Promise<any>;
     findByAgent(agentId: string): Promise<any>;
     update(id: string, updateLeadDto: any): Promise<any>;

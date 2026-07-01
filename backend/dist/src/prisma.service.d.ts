@@ -8,6 +8,9 @@ export declare class PrismaService implements OnModuleInit, OnModuleDestroy {
     get membershipPricing(): any;
     get commissionConfig(): any;
     get staff(): any;
+    get message(): any;
+    get statusUpdate(): any;
+    get kycDocument(): any;
     onModuleInit(): Promise<void>;
     onModuleDestroy(): Promise<void>;
 }

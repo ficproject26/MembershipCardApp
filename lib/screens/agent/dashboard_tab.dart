@@ -8,9 +8,13 @@ import '../../models/user_model.dart';
 import '../../models/lead_model.dart';
 import 'service_details_screen.dart';
 import 'services_tab.dart';
+import 'all_leads_screen.dart';
+import '../../widgets/hover_scale_card.dart';
 
 class AgentDashboardTab extends StatefulWidget {
-  const AgentDashboardTab({Key? key}) : super(key: key);
+  final Function(int)? onNavigate;
+  
+  const AgentDashboardTab({Key? key, this.onNavigate}) : super(key: key);
 
   @override
   State<AgentDashboardTab> createState() => _AgentDashboardTabState();
@@ -284,9 +288,11 @@ class _AgentDashboardTabState extends State<AgentDashboardTab>
                           label: 'Submit\nLead',
                           iconColor: const Color(0xFF10B981),
                           isDark: isDark,
-                          onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Go to Services tab!')),
-                          ),
+                          onTap: () {
+                            if (widget.onNavigate != null) {
+                              widget.onNavigate!(1); // Navigate to Services tab
+                            }
+                          },
                         ),
                         const SizedBox(width: 10),
                         _buildActionCard(
@@ -294,9 +300,11 @@ class _AgentDashboardTabState extends State<AgentDashboardTab>
                           label: 'Request\nPayout',
                           iconColor: const Color(0xFF8B5CF6),
                           isDark: isDark,
-                          onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Go to Wallet tab!')),
-                          ),
+                          onTap: () {
+                            if (widget.onNavigate != null) {
+                              widget.onNavigate!(2); // Navigate to Wallet tab
+                            }
+                          },
                         ),
                         const SizedBox(width: 10),
                         _buildActionCard(
@@ -304,9 +312,11 @@ class _AgentDashboardTabState extends State<AgentDashboardTab>
                           label: 'Share\nReferral',
                           iconColor: const Color(0xFFFACC15),
                           isDark: isDark,
-                          onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Go to Share tab!')),
-                          ),
+                          onTap: () {
+                            if (widget.onNavigate != null) {
+                              widget.onNavigate!(3); // Navigate to Share tab
+                            }
+                          },
                         ),
                         const SizedBox(width: 10),
                         _buildActionCard(
@@ -314,9 +324,11 @@ class _AgentDashboardTabState extends State<AgentDashboardTab>
                           label: 'Training\nCenter',
                           iconColor: const Color(0xFFF97316),
                           isDark: isDark,
-                          onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Go to Academy tab!')),
-                          ),
+                          onTap: () {
+                            if (widget.onNavigate != null) {
+                              widget.onNavigate!(5); // Navigate to Training tab
+                            }
+                          },
                         ),
                       ],
                     ),
@@ -725,15 +737,24 @@ class _AgentDashboardTabState extends State<AgentDashboardTab>
   // ── STAT PILLS ─────────────────────────────────────────────────────────────
   Widget _buildStatPill(String label, String value, IconData icon, Color color, bool isDark) {
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          color: const Color(0xFF131A22),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3)),
-        ),
-        child: Column(
-          children: [
+      child: GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AllLeadsScreen(initialFilter: label),
+            ),
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: const Color(0xFF131A22),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: color.withOpacity(0.3)),
+          ),
+          child: Column(
+            children: [
             Text(
               value,
               style: TextStyle(
@@ -761,7 +782,7 @@ class _AgentDashboardTabState extends State<AgentDashboardTab>
           ],
         ),
       ),
-    );
+    ));
   }
 
   // ── PROMO BANNER ───────────────────────────────────────────────────────────
@@ -860,20 +881,26 @@ class _AgentDashboardTabState extends State<AgentDashboardTab>
     required VoidCallback onTap,
   }) {
     return Expanded(
-      child: GestureDetector(
+      child: HoverScaleCard(
         onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
-          decoration: BoxDecoration(
-            color: const Color(0xFF131A22),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFF1F2937)),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: iconColor, size: 24),
-              const SizedBox(height: 6),
+        builder: (context, isHovered) {
+          return Container(
+            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFF131A22),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFF1F2937)),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icon, 
+                  color: iconColor, 
+                  size: 24,
+                  shadows: isHovered ? [Shadow(color: iconColor, blurRadius: 12)] : [],
+                ),
+                const SizedBox(height: 6),
               Text(
                 label,
                 textAlign: TextAlign.center,
@@ -886,7 +913,8 @@ class _AgentDashboardTabState extends State<AgentDashboardTab>
               ),
             ],
           ),
-        ),
+          );
+        },
       ),
     );
   }
@@ -981,7 +1009,7 @@ class _AgentDashboardTabState extends State<AgentDashboardTab>
         final icon = svc['icon'] as IconData;
         final name = svc['name'] as String;
 
-        return GestureDetector(
+        return HoverScaleCard(
           onTap: () {
             if (unlocked) {
               final service = ServiceItem(
@@ -1037,35 +1065,37 @@ class _AgentDashboardTabState extends State<AgentDashboardTab>
               );
             }
           },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            decoration: BoxDecoration(
-              gradient: unlocked
-                  ? const LinearGradient(
-                      colors: [Color(0xFF1A3B6E), Color(0xFF2A5298)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    )
-                  : null,
-              color: unlocked ? null : (isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.03)),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: unlocked
-                    ? const Color(0xFFFFC107).withOpacity(0.4)
-                    : (isDark ? Colors.white12 : Colors.black12),
+          builder: (context, isHovered) {
+            return AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              decoration: BoxDecoration(
+                gradient: unlocked
+                    ? const LinearGradient(
+                        colors: [Color(0xFF1A3B6E), Color(0xFF2A5298)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      )
+                    : null,
+                color: unlocked ? null : (isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.03)),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: unlocked
+                      ? const Color(0xFFFFC107).withOpacity(0.4)
+                      : (isDark ? Colors.white12 : Colors.black12),
+                ),
               ),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Stack(
-                  alignment: Alignment.topRight,
-                  children: [
-                    Icon(
-                      icon,
-                      color: unlocked ? const Color(0xFFFFC107) : (isDark ? Colors.white24 : Colors.black26),
-                      size: 26,
-                    ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Stack(
+                    alignment: Alignment.topRight,
+                    children: [
+                      Icon(
+                        icon,
+                        color: unlocked ? const Color(0xFFFFC107) : (isDark ? Colors.white24 : Colors.black26),
+                        size: 26,
+                        shadows: isHovered && unlocked ? [const Shadow(color: Color(0xFFFFC107), blurRadius: 12)] : [],
+                      ),
                     if (!unlocked)
                       const Icon(Icons.lock, color: Colors.red, size: 11),
                   ],
@@ -1097,11 +1127,12 @@ class _AgentDashboardTabState extends State<AgentDashboardTab>
                   ),
               ],
             ),
-          ),
-        );
-      },
-    );
-  }
+          );
+        },
+      );
+    },
+  );
+}
 
   // ── RECENT LEADS ───────────────────────────────────────────────────────────
   Widget _buildLeadCard(LeadModel lead, bool isDark) {

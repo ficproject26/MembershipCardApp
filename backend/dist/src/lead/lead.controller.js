@@ -25,8 +25,8 @@ let LeadController = class LeadController {
     create(createLeadDto) {
         return this.leadService.create(createLeadDto);
     }
-    findAll() {
-        return this.leadService.findAll();
+    findAll(status, serviceType) {
+        return this.leadService.findAll(status, serviceType);
     }
     findByAgent(agentId) {
         return this.leadService.findByAgent(agentId);
@@ -51,8 +51,10 @@ __decorate([
 ], LeadController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)(),
+    __param(0, (0, common_1.Query)('status')),
+    __param(1, (0, common_1.Query)('serviceType')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", void 0)
 ], LeadController.prototype, "findAll", null);
 __decorate([

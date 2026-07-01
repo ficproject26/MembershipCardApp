@@ -10,6 +10,8 @@ exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
 const app_controller_1 = require("./app.controller");
 const app_service_1 = require("./app.service");
+const serve_static_1 = require("@nestjs/serve-static");
+const path_1 = require("path");
 const agent_module_1 = require("./agent/agent.module");
 const lead_module_1 = require("./lead/lead.module");
 const pricing_module_1 = require("./pricing/pricing.module");
@@ -18,12 +20,21 @@ const staff_module_1 = require("./staff/staff.module");
 const auth_module_1 = require("./auth/auth.module");
 const integrations_module_1 = require("./integrations/integrations.module");
 const queue_module_1 = require("./queue/queue.module");
+const chat_module_1 = require("./chat/chat.module");
+const status_module_1 = require("./status/status.module");
+const kyc_upload_module_1 = require("./kyc-upload/kyc-upload.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
-        imports: [prisma_module_1.PrismaModule, agent_module_1.AgentModule, lead_module_1.LeadModule, pricing_module_1.PricingModule, staff_module_1.StaffModule, auth_module_1.AuthModule, integrations_module_1.IntegrationsModule, queue_module_1.QueueModule],
+        imports: [
+            serve_static_1.ServeStaticModule.forRoot({
+                rootPath: (0, path_1.join)(process.cwd(), 'uploads'),
+                serveRoot: '/uploads/',
+            }),
+            prisma_module_1.PrismaModule, agent_module_1.AgentModule, lead_module_1.LeadModule, pricing_module_1.PricingModule, staff_module_1.StaffModule, auth_module_1.AuthModule, integrations_module_1.IntegrationsModule, queue_module_1.QueueModule, chat_module_1.ChatModule, status_module_1.StatusModule, kyc_upload_module_1.KycUploadModule
+        ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],
     })

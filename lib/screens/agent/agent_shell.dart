@@ -5,7 +5,7 @@ import 'dashboard_tab.dart';
 import 'services_tab.dart';
 import 'wallet_tab.dart';
 import 'share_tab.dart';
-import 'messages_tab.dart';
+import '../shared/messages_tab.dart';
 import 'training_tab.dart';
 
 class AgentShell extends StatefulWidget {
@@ -18,14 +18,13 @@ class AgentShell extends StatefulWidget {
 class _AgentShellState extends State<AgentShell> {
   int _currentIndex = 0;
 
-  final List<Widget> _tabs = [
-    const AgentDashboardTab(),
-    const AgentServicesTab(),
-    const AgentWalletTab(),
-    const AgentShareTab(),
-    const AgentMessagesTab(),
-    const AgentTrainingTab(),
-  ];
+
+
+  void _navigateToTab(int index) {
+    setState(() {
+      _currentIndex = index;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,6 +48,15 @@ class _AgentShellState extends State<AgentShell> {
         ),
       );
     }
+
+    final List<Widget> tabs = [
+      AgentDashboardTab(onNavigate: _navigateToTab),
+      const AgentServicesTab(),
+      const AgentWalletTab(),
+      const AgentShareTab(),
+      SharedMessagesTab(currentUserId: agent.id, currentUserName: agent.name, currentUserRole: 'Agent'),
+      const AgentTrainingTab(),
+    ];
 
     return Scaffold(
       appBar: PreferredSize(
@@ -169,7 +177,7 @@ class _AgentShellState extends State<AgentShell> {
       extendBodyBehindAppBar: false,
       body: Container(
         color: const Color(0xFF0C1017),
-        child: _tabs[_currentIndex],
+        child: tabs[_currentIndex],
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,

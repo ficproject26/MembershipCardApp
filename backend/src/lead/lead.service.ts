@@ -12,9 +12,14 @@ export class LeadService {
     });
   }
 
-  async findAll() {
+  async findAll(status?: string, serviceType?: string) {
+    const where: any = {};
+    if (status) where.status = status;
+    if (serviceType) where.serviceType = serviceType;
     return this.prisma.lead.findMany({
+      where,
       include: { agent: true },
+      orderBy: { dateCreated: 'desc' },
     });
   }
 

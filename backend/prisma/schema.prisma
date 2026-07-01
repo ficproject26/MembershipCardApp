@@ -38,12 +38,26 @@ model Lead {
   agent           Agent      @relation(fields: [agentId], references: [id])
   customerName    String?
   customerPhone   String?
+  customerEmail   String?
   serviceType     String
   details         String     @default("{}") // Store JSON string since SQLite doesn't natively support JSON
   status          String     @default("Pending") // Pending, Approved, Stage1Pending...
   rejectionReason String?
   bankMessage     String?
+  kycLink         String?    // Unique token for public KYC upload page
   dateCreated     DateTime   @default(now())
+  kycDocuments    KycDocument[]
+}
+
+model KycDocument {
+  id            String   @id @default(uuid())
+  leadId        String
+  lead          Lead     @relation(fields: [leadId], references: [id])
+  docType       String   // "aadhaar_front", "aadhaar_back", "pan_card", "live_photo", "passport_photo"
+  aadhaarNumber String?
+  panNumber     String?
+  filePath      String   // Path to saved file on server
+  uploadedAt    DateTime @default(now())
 }
 
 model Transaction {
@@ -80,4 +94,27 @@ model Staff {
   department  String?
   password    String?
   dateJoined  DateTime @default(now())
+}
+
+model Message {
+  id           String   @id @default(uuid())
+  senderId     String
+  senderType   String   // 'Agent', 'Staff', 'Admin'
+  receiverId   String
+  receiverType String   // 'Agent', 'Staff', 'Admin'
+  content      String
+  type         String   @default("TEXT") // TEXT, IMAGE, VIDEO
+  mediaUrl     String?
+  isRead       Boolean  @default(false)
+  createdAt    DateTime @default(now())
+}
+
+model StatusUpdate {
+  id        String   @id @default(uuid())
+  userId    String
+  userName  String
+  content   String?
+  type      String   @default("TEXT") // TEXT, IMAGE, VIDEO
+  mediaUrl  String?
+  createdAt DateTime @default(now())
 }

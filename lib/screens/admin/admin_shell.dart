@@ -27,7 +27,7 @@ class _AdminShellState extends State<AdminShell> {
     const AdminPayoutsTab(),
     const AdminAgentsTab(),
     const AdminStaffTab(),
-    const SharedMessagesTab(currentUserName: 'Admin', currentUserRole: 'Admin'),
+    const SharedMessagesTab(currentUserId: 'admin', currentUserName: 'Admin', currentUserRole: 'Admin'),
     const AdminMembershipTab(),
     const AdminCommissionTab(),
     const AdminSettingsTab(),

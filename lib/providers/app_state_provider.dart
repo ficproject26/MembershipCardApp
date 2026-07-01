@@ -115,6 +115,15 @@ class AppStateProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void logout() {
+    _isAdmin = false;
+    _isTL = false;
+    _isStaff = false;
+    _currentAgentId = null;
+    _currentStaffId = null;
+    notifyListeners();
+  }
+
   // Configuration State — defaults used until backend responds
   List<MembershipPricing> _pricings = [
     MembershipPricing(tier: MembershipTier.Silver, price: 999, benefits: ['Credit Card Leads', 'Loan Leads', 'Basic Dashboard', '5% Direct Referrals']),
@@ -322,6 +331,20 @@ class AppStateProvider extends ChangeNotifier {
     }
   }
 
+  Future<void> updateLeadStatus(String id, String newStatus) async {
+    try {
+      final updated = await _leadService.updateLead(id, {'status': newStatus});
+      final index = _leads.indexWhere((l) => l.id == id);
+      if (index != -1) {
+        _leads[index] = updated;
+        notifyListeners();
+      }
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+    }
+  }
+
   Future<void> fetchPricing() async {
     _isLoadingPricing = true;
     notifyListeners();
@@ -457,6 +480,7 @@ class AppStateProvider extends ChangeNotifier {
   Future<void> submitLead({
     String? customerName,
     String? customerPhone,
+    String? customerEmail,
     required String serviceType,
     required Map<String, String> details,
     LeadStatus status = LeadStatus.Pending,
@@ -469,6 +493,7 @@ class AppStateProvider extends ChangeNotifier {
         'agentId': agent.id,
         'customerName': customerName,
         'customerPhone': customerPhone,
+        'customerEmail': customerEmail,
         'serviceType': serviceType,
         'details': jsonEncode(details),
         'status': status.name,
@@ -536,6 +561,28 @@ class AppStateProvider extends ChangeNotifier {
     }
   }
 
+  Future<String?> generateKycLink(String leadId) async {
+    try {
+      final link = await _leadService.generateKycLink(leadId);
+      await fetchLeads();
+      return link;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return null;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getKycDocuments(String leadId) async {
+    try {
+      return await _leadService.getKycDocuments(leadId);
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return [];
+    }
+  }
+
   Future<void> verifyLead(String leadId, LeadStatus newStatus, {String? reason}) async {
     int idx = _leads.indexWhere((l) => l.id == leadId);
     if (idx == -1) return;
@@ -558,6 +605,8 @@ class AppStateProvider extends ChangeNotifier {
     bool shouldPayCommission = false;
     if (lead.serviceType == 'Loan') {
       if (newStatus == LeadStatus.Dispatched) shouldPayCommission = true;
+    } else if (lead.serviceType == 'IT Projects') {
+      if (newStatus == LeadStatus.Stage2Approved) shouldPayCommission = true;
     } else {
       if (newStatus == LeadStatus.Approved) shouldPayCommission = true;
     }

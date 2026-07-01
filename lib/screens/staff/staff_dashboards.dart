@@ -53,9 +53,11 @@ class _GenericDashboard extends StatelessWidget {
             children: [
               Icon(icon, size: 32, color: const Color(0xFFFFC107)),
               const SizedBox(width: 12),
-              Text(
-                title,
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF1A3B6E)),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: isDark ? Colors.white : const Color(0xFF1A3B6E)),
+                ),
               ),
             ],
           ),

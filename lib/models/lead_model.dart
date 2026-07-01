@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-enum LeadStatus { Stage1Pending, Stage1Approved, Stage1Rejected, Stage2Pending, Stage2Approved, Stage2Rejected, Stage3Pending, Stage3Approved, Stage3Rejected, Approved, Rejected, Dispatched, Pending, Process, Followup, Converted, Selected }
+enum LeadStatus { Stage1Pending, Stage1Approved, Stage1Rejected, Stage2Pending, Stage2Approved, Stage2Rejected, Stage3Pending, Stage3Approved, Stage3Rejected, Approved, Rejected, Dispatched, Pending, Process, Followup, Converted, Selected, KYC_Pending, KYC_Verified, KYC_Rejected }
 
 class LeadModel {
   final String id;
@@ -8,12 +8,14 @@ class LeadModel {
   final String? agentName;
   final String? customerName;
   final String? customerPhone;
+  final String? customerEmail;
   final String serviceType; // 'Credit Card', 'Loan', 'Jobs', 'Insurance', 'IT Projects', 'BPO Services'
   final Map<String, String> details;
   final LeadStatus status;
   final DateTime dateCreated;
   final String? rejectionReason;
   final String? bankMessage;
+  final String? kycLink;
 
   LeadModel({
     required this.id,
@@ -21,12 +23,14 @@ class LeadModel {
     this.agentName,
     this.customerName,
     this.customerPhone,
+    this.customerEmail,
     required this.serviceType,
     required this.details,
     this.status = LeadStatus.Pending,
     required this.dateCreated,
     this.rejectionReason,
     this.bankMessage,
+    this.kycLink,
   });
 
   factory LeadModel.fromJson(Map<String, dynamic> json) {
@@ -55,6 +59,7 @@ class LeadModel {
       agentName: agentName,
       customerName: json['customerName'] as String?,
       customerPhone: json['customerPhone'] as String?,
+      customerEmail: json['customerEmail'] as String?,
       serviceType: json['serviceType'] as String,
       details: parsedDetails,
       status: LeadStatus.values.firstWhere(
@@ -64,6 +69,7 @@ class LeadModel {
       dateCreated: DateTime.tryParse(json['dateCreated'] as String? ?? '') ?? DateTime.now(),
       rejectionReason: json['rejectionReason'] as String?,
       bankMessage: json['bankMessage'] as String?,
+      kycLink: json['kycLink'] as String?,
     );
   }
 
@@ -74,12 +80,14 @@ class LeadModel {
       'agentName': agentName,
       'customerName': customerName,
       'customerPhone': customerPhone,
+      'customerEmail': customerEmail,
       'serviceType': serviceType,
       'details': jsonEncode(details),
       'status': status.name,
       'dateCreated': dateCreated.toIso8601String(),
       'rejectionReason': rejectionReason,
       'bankMessage': bankMessage,
+      'kycLink': kycLink,
     };
   }
 
@@ -89,12 +97,14 @@ class LeadModel {
     String? agentName,
     String? customerName,
     String? customerPhone,
+    String? customerEmail,
     String? serviceType,
     Map<String, String>? details,
     LeadStatus? status,
     DateTime? dateCreated,
     String? rejectionReason,
     String? bankMessage,
+    String? kycLink,
   }) {
     return LeadModel(
       id: id ?? this.id,
@@ -102,12 +112,14 @@ class LeadModel {
       agentName: agentName ?? this.agentName,
       customerName: customerName ?? this.customerName,
       customerPhone: customerPhone ?? this.customerPhone,
+      customerEmail: customerEmail ?? this.customerEmail,
       serviceType: serviceType ?? this.serviceType,
       details: details ?? this.details,
       status: status ?? this.status,
       dateCreated: dateCreated ?? this.dateCreated,
       rejectionReason: rejectionReason ?? this.rejectionReason,
       bankMessage: bankMessage ?? this.bankMessage,
+      kycLink: kycLink ?? this.kycLink,
     );
   }
 }

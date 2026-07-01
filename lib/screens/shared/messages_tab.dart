@@ -1,15 +1,31 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:video_player/video_player.dart';
 import '../../providers/app_state_provider.dart';
+import '../../providers/chat_provider.dart';
+import '../../providers/status_provider.dart';
 import '../../models/staff_model.dart';
-
+import '../../models/message_model.dart';
+import 'new_chat_screen.dart';
+import 'video_player_widget.dart';
+import 'story_viewer_widget.dart';
+import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_contacts/flutter_contacts.dart';
+import '../../services/api_client.dart';
 /// Shared Messages Tab — Works for Admin, Staff, and Agents
 class SharedMessagesTab extends StatefulWidget {
+  final String currentUserId;
   final String currentUserName;
   final String currentUserRole; // 'Admin', 'Staff', 'Agent'
 
   const SharedMessagesTab({
     Key? key,
+    required this.currentUserId,
     required this.currentUserName,
     required this.currentUserRole,
   }) : super(key: key);
@@ -23,16 +39,26 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
   String _searchQuery = '';
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ChatProvider>().init(widget.currentUserId, widget.currentUserRole);
+      context.read<StatusProvider>().fetchStatuses();
+    });
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
   }
 
-  List<_ContactItem> _buildContacts(AppStateProvider state) {
+  List<_ContactItem> _buildContacts(AppStateProvider state, ChatProvider chat) {
     final List<_ContactItem> contacts = [];
 
     // Admin is always a contact (unless you ARE admin)
     if (widget.currentUserRole != 'Admin') {
+      final adminMsg = chat.getLastMessageFor('admin');
       contacts.add(_ContactItem(
         id: 'admin',
         name: 'FIC Admin',
@@ -41,16 +67,20 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
         icon: Icons.admin_panel_settings,
         gradientColors: [const Color(0xFF1A3B6E), const Color(0xFF2563EB)],
         isOnline: true,
-        lastMessage: 'Welcome to FIC! Let us know if you need help.',
-        lastTime: 'Now',
-        unreadCount: 1,
+        lastMessage: adminMsg?.content ?? 'Welcome to FIC! Let us know if you need help.',
+        lastTime: adminMsg != null ? _formatTime(adminMsg.createdAt) : 'Now',
+        lastMessageTime: adminMsg?.createdAt ?? DateTime.now(),
+        unreadCount: 0,
       ));
     }
 
     // Add all staff members as contacts
     for (final staff in state.staff) {
-      // Skip self
-      if (widget.currentUserRole == 'Staff' && staff.name == widget.currentUserName) continue;
+      if (widget.currentUserRole == 'Staff' && staff.id == widget.currentUserId) continue;
+      
+      final msg = chat.getLastMessageFor(staff.id);
+
+      if (msg == null) continue; // Only show active chats
 
       contacts.add(_ContactItem(
         id: staff.id,
@@ -59,58 +89,47 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
         subtitle: staff.role.displayName,
         icon: _iconForRole(staff.role),
         gradientColors: _colorsForRole(staff.role),
-        isOnline: _randomOnline(staff.name),
-        lastMessage: _defaultMessage(staff.role),
-        lastTime: _randomTime(staff.name),
-        unreadCount: staff.name.hashCode % 3 == 0 ? 1 : 0,
+        isOnline: true,
+        lastMessage: msg.content,
+        lastTime: _formatTime(msg.createdAt),
+        lastMessageTime: msg.createdAt,
+        unreadCount: 0,
       ));
     }
 
     // Add agents as contacts (for admin/staff, show top agents)
-    if (widget.currentUserRole == 'Admin' || widget.currentUserRole == 'Staff') {
+    if (widget.currentUserRole == 'Admin' || widget.currentUserRole == 'Staff' || widget.currentUserRole == 'Project Manager') {
       for (int i = 0; i < state.agents.length && i < 10; i++) {
         final agent = state.agents[i];
+        final msg = chat.getLastMessageFor(agent.id);
+
+        if (msg == null) continue; // Only show active chats
+
         contacts.add(_ContactItem(
           id: agent.id,
           name: agent.name,
-          role: 'AGENT • ${agent.membership.name}',
+          role: 'AGENT',
           subtitle: 'Agent Code: ${agent.agentCode}',
           icon: Icons.person,
           gradientColors: [const Color(0xFF059669), const Color(0xFF10B981)],
-          isOnline: i % 3 == 0,
-          lastMessage: 'Lead update pending',
-          lastTime: i == 0 ? 'Today' : 'Yesterday',
-          unreadCount: i == 0 ? 2 : 0,
+          isOnline: true,
+          lastMessage: msg.content,
+          lastTime: _formatTime(msg.createdAt),
+          lastMessageTime: msg.createdAt,
+          unreadCount: 0,
         ));
       }
     }
 
-    // Built-in system channels
-    contacts.add(_ContactItem(
-      id: 'announcements',
-      name: 'FIC Announcements',
-      role: 'CHANNEL',
-      subtitle: 'Official Updates',
-      icon: Icons.campaign,
-      gradientColors: [const Color(0xFFF59E0B), const Color(0xFFFBBF24)],
-      isOnline: true,
-      lastMessage: '🔥 Double Commission Week is LIVE!',
-      lastTime: '2:00 PM',
-      unreadCount: 3,
-    ));
+    // Built-in system channels removed
 
-    contacts.add(_ContactItem(
-      id: 'helpdesk',
-      name: 'FIC Help Desk',
-      role: 'SUPPORT',
-      subtitle: 'Support & Queries',
-      icon: Icons.support_agent,
-      gradientColors: [const Color(0xFFDB2777), const Color(0xFFF472B6)],
-      isOnline: true,
-      lastMessage: 'How can we help you today?',
-      lastTime: 'Online',
-      unreadCount: 0,
-    ));
+    // Sort by recent messages
+    contacts.sort((a, b) {
+      if (a.lastMessageTime == null && b.lastMessageTime == null) return 0;
+      if (a.lastMessageTime == null) return 1;
+      if (b.lastMessageTime == null) return -1;
+      return b.lastMessageTime!.compareTo(a.lastMessageTime!);
+    });
 
     return contacts;
   }
@@ -190,25 +209,72 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
     }
   }
 
-  bool _randomOnline(String name) => name.hashCode % 3 != 0;
-  String _randomTime(String name) {
-    final options = ['Now', '5m ago', '1h ago', 'Today', 'Yesterday'];
-    return options[name.hashCode.abs() % options.length];
+  String _formatTime(DateTime time) {
+    final now = DateTime.now();
+    final diff = now.difference(time);
+    if (diff.inMinutes < 1) return 'Now';
+    if (diff.inHours < 1) return '${diff.inMinutes}m ago';
+    if (diff.inDays < 1) return '${diff.inHours}h ago';
+    if (diff.inDays == 1) return 'Yesterday';
+    return '${time.day}/${time.month}';
   }
 
   @override
   Widget build(BuildContext context) {
     final state = Provider.of<AppStateProvider>(context);
-    final contacts = _buildContacts(state);
+    final chat = Provider.of<ChatProvider>(context);
+    final contacts = _buildContacts(state, chat);
 
     final filtered = _searchQuery.isEmpty
         ? contacts
         : contacts.where((c) => c.name.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
 
-    final onlineContacts = contacts.where((c) => c.isOnline).toList();
+    final statusProvider = Provider.of<StatusProvider>(context);
+    final activeStatuses = statusProvider.statuses;
+    final myStatuses = activeStatuses.where((s) => s.userId == widget.currentUserId).toList();
+    final otherStatuses = activeStatuses.where((s) => s.userId != widget.currentUserId).toList();
+    
+    final Map<String, List<StatusUpdate>> groupedOtherStatuses = {};
+    for (var s in otherStatuses) {
+      groupedOtherStatuses.putIfAbsent(s.userId, () => []).add(s);
+    }
 
-    return Column(
-      children: [
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: const Color(0xFFFFC107),
+        child: const Icon(Icons.chat, color: Colors.black),
+        onPressed: () async {
+          final selectedContact = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => NewChatScreen(
+                currentUserId: widget.currentUserId,
+                currentUserRole: widget.currentUserRole,
+              ),
+            ),
+          );
+          if (selectedContact != null && mounted) {
+            _openChat(
+              context,
+              _ContactItem(
+                id: selectedContact['id'],
+                name: selectedContact['name'],
+                role: selectedContact['role'],
+                subtitle: selectedContact['subtitle'],
+                icon: selectedContact['icon'],
+                gradientColors: selectedContact['colors'],
+                isOnline: true,
+                lastMessage: '',
+                lastTime: '',
+                unreadCount: 0,
+              ),
+            );
+          }
+        },
+      ),
+      body: Column(
+        children: [
         // Header
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -300,7 +366,7 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
         ),
 
         // Online contacts row (stories style)
-        if (onlineContacts.isNotEmpty)
+        if (activeStatuses.isNotEmpty || true)
           SizedBox(
             height: 100,
             child: ListView(
@@ -315,32 +381,66 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
                     children: [
                       Stack(
                         children: [
-                          Container(
-                            width: 50,
-                            height: 50,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.white.withOpacity(0.05),
-                              border: Border.all(color: Colors.white.withOpacity(0.1), width: 1.5),
+                          GestureDetector(
+                            onTap: () {
+                              if (myStatuses.isNotEmpty) {
+                                _showStoryViewer(context, myStatuses, true);
+                              } else {
+                                _showStatusOptionsBottomSheet(context);
+                              }
+                            },
+                            child: Container(
+                              padding: EdgeInsets.all(myStatuses.isNotEmpty ? 2.5 : 0),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: myStatuses.isNotEmpty 
+                                  ? const LinearGradient(
+                                      colors: [Color(0xFFFFC107), Color(0xFFFF6B35), Color(0xFFE91E63)],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ) 
+                                  : null,
+                              ),
+                              child: Container(
+                                padding: EdgeInsets.all(myStatuses.isNotEmpty ? 2 : 0),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: myStatuses.isNotEmpty ? const Color(0xFF0C1017) : Colors.transparent,
+                                ),
+                                child: Container(
+                                  width: myStatuses.isNotEmpty ? 42 : 50,
+                                  height: myStatuses.isNotEmpty ? 42 : 50,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: Colors.white.withOpacity(0.05),
+                                    border: myStatuses.isEmpty ? Border.all(color: Colors.white.withOpacity(0.1), width: 1.5) : null,
+                                  ),
+                                  child: const Icon(Icons.person, color: Colors.white54, size: 22),
+                                ),
+                              ),
                             ),
-                            child: const Icon(Icons.person, color: Colors.white54, size: 22),
                           ),
                           Positioned(
                             right: 0,
                             bottom: 0,
-                            child: Container(
-                              padding: const EdgeInsets.all(2),
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF0C1017),
-                                shape: BoxShape.circle,
-                              ),
+                            child: GestureDetector(
+                              onTap: () {
+                                _showStatusOptionsBottomSheet(context);
+                              },
                               child: Container(
                                 padding: const EdgeInsets.all(2),
                                 decoration: const BoxDecoration(
-                                  color: Color(0xFFFFC107),
+                                  color: Color(0xFF0C1017),
                                   shape: BoxShape.circle,
                                 ),
-                                child: const Icon(Icons.add, color: Colors.black, size: 10),
+                                child: Container(
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFFFFC107),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(Icons.add, color: Colors.black, size: 10),
+                                ),
                               ),
                             ),
                           ),
@@ -351,10 +451,14 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
                     ],
                   ),
                 ),
-                // Online contacts
-                ...onlineContacts.map((contact) => GestureDetector(
+                // Other Statuses
+                ...groupedOtherStatuses.values.map((userStatuses) {
+                  final status = userStatuses.first;
+                  return GestureDetector(
                       behavior: HitTestBehavior.opaque,
-                      onTap: () => _openChat(context, contact),
+                      onTap: () {
+                        _showStoryViewer(context, userStatuses, false);
+                      },
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 6),
                         child: Column(
@@ -377,9 +481,9 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
                                   height: 42,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    gradient: LinearGradient(colors: contact.gradientColors),
+                                    gradient: LinearGradient(colors: [const Color(0xFF0891B2), const Color(0xFF22D3EE)]),
                                   ),
-                                  child: Icon(contact.icon, color: Colors.white, size: 20),
+                                  child: Icon(Icons.person, color: Colors.white, size: 20),
                                 ),
                               ),
                             ),
@@ -387,7 +491,7 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
                             SizedBox(
                               width: 54,
                               child: Text(
-                                contact.name.split(' ').first,
+                                status.userName.split(' ').first,
                                 style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w600),
                                 overflow: TextOverflow.ellipsis,
                                 textAlign: TextAlign.center,
@@ -396,7 +500,8 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
                           ],
                         ),
                       ),
-                    )),
+                    );
+                  }),
               ],
             ),
           ),
@@ -429,6 +534,7 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
                 ),
         ),
       ],
+      ),
     );
   }
 
@@ -570,6 +676,174 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
       ),
     );
   }
+
+  void _showStatusOptionsBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF1A1D24),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.edit, color: Colors.white),
+              title: const Text('Text Status', style: TextStyle(color: Colors.white)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _showAddStatusDialog(context);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.image, color: Colors.white),
+              title: const Text('Photo Status', style: TextStyle(color: Colors.white)),
+              onTap: () async {
+                Navigator.pop(ctx);
+                final ImagePicker picker = ImagePicker();
+                final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+                if (image != null && mounted) {
+                  _showUploadMediaDialog(context, File(image.path), 'IMAGE');
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.videocam, color: Colors.white),
+              title: const Text('Video Status', style: TextStyle(color: Colors.white)),
+              onTap: () async {
+                Navigator.pop(ctx);
+                final ImagePicker picker = ImagePicker();
+                final XFile? video = await picker.pickVideo(source: ImageSource.gallery);
+                if (video != null && mounted) {
+                  _showUploadMediaDialog(context, File(video.path), 'VIDEO');
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showUploadMediaDialog(BuildContext context, File file, String type) {
+    final TextEditingController textController = TextEditingController();
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1D24),
+        title: Text('Upload $type', style: const TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            type == 'IMAGE' 
+              ? Image.file(file, height: 150, fit: BoxFit.cover)
+              : SizedBox(height: 150, child: VideoPlayerWidget(file: file)),
+            const SizedBox(height: 16),
+            TextField(
+              controller: textController,
+              style: const TextStyle(color: Colors.white),
+              maxLength: 100,
+              decoration: const InputDecoration(
+                hintText: 'Add a caption...',
+                hintStyle: TextStyle(color: Colors.white38),
+                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white38)),
+                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFFFFC107))),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFC107)),
+            onPressed: () async {
+              // Show loading indicator
+              showDialog(
+                context: ctx,
+                barrierDismissible: false,
+                builder: (c) => const Center(child: CircularProgressIndicator(color: Color(0xFFFFC107))),
+              );
+              final success = await Provider.of<StatusProvider>(context, listen: false).postMediaStatus(
+                widget.currentUserId,
+                widget.currentUserName,
+                type,
+                file,
+                content: textController.text.trim(),
+              );
+              Navigator.pop(ctx); // pop loading
+              Navigator.pop(ctx); // pop dialog
+              if (success && mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Status updated!'), backgroundColor: Color(0xFF10B981)),
+                );
+              }
+            },
+            child: const Text('Post', style: TextStyle(color: Colors.black)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAddStatusDialog(BuildContext context) {
+    final TextEditingController textController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1D24),
+        title: const Text('Add Status Update', style: TextStyle(color: Colors.white)),
+        content: TextField(
+          controller: textController,
+          style: const TextStyle(color: Colors.white),
+          maxLength: 100,
+          decoration: const InputDecoration(
+            hintText: 'What are you working on?',
+            hintStyle: TextStyle(color: Colors.white38),
+            enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white38)),
+            focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFFFFC107))),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFC107)),
+            onPressed: () async {
+              if (textController.text.trim().isNotEmpty) {
+                final success = await Provider.of<StatusProvider>(context, listen: false).postStatus(
+                  widget.currentUserId,
+                  widget.currentUserName,
+                  textController.text.trim(),
+                );
+                Navigator.pop(ctx);
+                if (success && mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Status updated!'), backgroundColor: Color(0xFF10B981)),
+                  );
+                }
+              }
+            },
+            child: const Text('Post', style: TextStyle(color: Colors.black)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showStoryViewer(BuildContext context, List<StatusUpdate> statuses, bool isCurrentUser) {
+    showDialog(
+      context: context,
+      builder: (ctx) => StoryViewerWidget(
+        statuses: statuses,
+        isCurrentUser: isCurrentUser,
+        currentUserId: widget.currentUserId,
+      ),
+    );
+  }
 }
 
 // ─── Chat Screen ──────────────────────────────────────────────────────────────
@@ -592,12 +866,14 @@ class _ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<_ChatScreen> {
   final TextEditingController _msgController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final List<_ChatMessage> _messages = [];
+  bool _showEmojiPicker = false;
 
   @override
   void initState() {
     super.initState();
-    _messages.addAll(_generateDemoMessages());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ChatProvider>().fetchHistory(widget.contact.id);
+    });
   }
 
   @override
@@ -607,43 +883,14 @@ class _ChatScreenState extends State<_ChatScreen> {
     super.dispose();
   }
 
-  List<_ChatMessage> _generateDemoMessages() {
-    final contact = widget.contact;
-    return [
-      _ChatMessage(
-        text: 'Hi ${widget.currentUserName}! 👋',
-        isMe: false,
-        time: '10:00 AM',
-      ),
-      _ChatMessage(
-        text: contact.lastMessage,
-        isMe: false,
-        time: '10:02 AM',
-      ),
-      _ChatMessage(
-        text: 'Thank you! I will check on that.',
-        isMe: true,
-        time: '10:05 AM',
-      ),
-      _ChatMessage(
-        text: 'Sure! Let me know if you need anything else.',
-        isMe: false,
-        time: '10:06 AM',
-      ),
-    ];
-  }
-
   void _sendMessage() {
     final text = _msgController.text.trim();
     if (text.isEmpty) return;
 
-    setState(() {
-      _messages.add(_ChatMessage(
-        text: text,
-        isMe: true,
-        time: TimeOfDay.now().format(context),
-      ));
-    });
+    final role = widget.contact.role.contains('AGENT') ? 'Agent' : 
+                 widget.contact.id == 'admin' ? 'Admin' : 'Staff';
+
+    context.read<ChatProvider>().sendMessage(widget.contact.id, role, text);
     _msgController.clear();
 
     // Scroll to bottom
@@ -656,45 +903,12 @@ class _ChatScreenState extends State<_ChatScreen> {
         );
       }
     });
-
-    // Simulate reply
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() {
-          _messages.add(_ChatMessage(
-            text: _getAutoReply(),
-            isMe: false,
-            time: TimeOfDay.now().format(context),
-          ));
-        });
-        Future.delayed(const Duration(milliseconds: 100), () {
-          if (_scrollController.hasClients) {
-            _scrollController.animateTo(
-              _scrollController.position.maxScrollExtent,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOut,
-            );
-          }
-        });
-      }
-    });
-  }
-
-  String _getAutoReply() {
-    final replies = [
-      'Got it! Will update you shortly. 👍',
-      'Thanks for the update! I\'ll look into this.',
-      'Sure, processing now. You\'ll get a notification.',
-      'Noted! This has been forwarded to the team.',
-      'Thanks! We\'ll get back to you within 24 hours.',
-      'Great to hear! Keep up the good work! 🌟',
-    ];
-    return replies[DateTime.now().second % replies.length];
   }
 
   @override
   Widget build(BuildContext context) {
     final contact = widget.contact;
+    final messages = context.watch<ChatProvider>().getMessagesFor(contact.id);
 
     return Scaffold(
       backgroundColor: const Color(0xFF0C1017),
@@ -705,35 +919,76 @@ class _ChatScreenState extends State<_ChatScreen> {
           icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(colors: contact.gradientColors),
-              ),
-              child: Icon(contact.icon, color: Colors.white, size: 18),
-            ),
-            const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  contact.name,
-                  style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+        title: GestureDetector(
+          onTap: () {
+            showDialog(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                backgroundColor: const Color(0xFF131A22),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                title: Row(
+                  children: [
+                    Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: LinearGradient(colors: contact.gradientColors),
+                      ),
+                      child: Icon(contact.icon, color: Colors.white, size: 28),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(contact.name, style: const TextStyle(color: Colors.white, fontSize: 18)),
+                          Text(contact.role, style: const TextStyle(color: Color(0xFFFFC107), fontSize: 12)),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                Text(
-                  contact.isOnline ? 'Online' : 'Last seen recently',
-                  style: TextStyle(
-                    color: contact.isOnline ? const Color(0xFF10B981) : Colors.white38,
-                    fontSize: 11,
+                content: const Text('Full profile details will be implemented in a future update.', style: TextStyle(color: Colors.white70)),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text('Close', style: TextStyle(color: Color(0xFFFFC107))),
                   ),
+                ],
+              ),
+            );
+          },
+          child: Row(
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(colors: contact.gradientColors),
                 ),
-              ],
-            ),
-          ],
+                child: Icon(contact.icon, color: Colors.white, size: 18),
+              ),
+              const SizedBox(width: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    contact.name,
+                    style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+                  ),
+                  Text(
+                    contact.isOnline ? 'Online' : 'Last seen recently',
+                    style: TextStyle(
+                      color: contact.isOnline ? const Color(0xFF10B981) : Colors.white38,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
         actions: [
           IconButton(
@@ -754,7 +1009,11 @@ class _ChatScreenState extends State<_ChatScreen> {
           ),
           IconButton(
             icon: const Icon(Icons.more_vert, color: Colors.white54),
-            onPressed: () {},
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('More options coming soon!'), backgroundColor: Color(0xFF1A3B6E)),
+              );
+            },
           ),
         ],
       ),
@@ -766,10 +1025,12 @@ class _ChatScreenState extends State<_ChatScreen> {
               controller: _scrollController,
               physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              itemCount: _messages.length,
+              itemCount: messages.length,
               itemBuilder: (ctx, i) {
-                final msg = _messages[i];
-                return _buildMessageBubble(msg, contact);
+                final msg = messages[i];
+                final isMe = msg.senderId != contact.id;
+                final time = '${msg.createdAt.hour}:${msg.createdAt.minute.toString().padLeft(2, '0')}';
+                return _buildMessageBubble(msg, isMe, time, contact);
               },
             ),
           ),
@@ -784,13 +1045,42 @@ class _ChatScreenState extends State<_ChatScreen> {
             child: SafeArea(
               child: Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.06),
-                      borderRadius: BorderRadius.circular(10),
+                  GestureDetector(
+                    onTap: () {
+                      showModalBottomSheet(
+                        context: context,
+                        backgroundColor: Colors.transparent,
+                        builder: (ctx) => Container(
+                          margin: const EdgeInsets.all(12),
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF1E2630),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Wrap(
+                            alignment: WrapAlignment.center,
+                            spacing: 32,
+                            runSpacing: 24,
+                            children: [
+                              _buildAttachIcon(Icons.insert_drive_file, Colors.indigo, 'Document', ctx),
+                              _buildAttachIcon(Icons.camera_alt, Colors.pink, 'Camera', ctx),
+                              _buildAttachIcon(Icons.photo, Colors.purple, 'Gallery', ctx),
+                              _buildAttachIcon(Icons.headset, Colors.orange, 'Audio', ctx),
+                              _buildAttachIcon(Icons.location_on, Colors.green, 'Location', ctx),
+                              _buildAttachIcon(Icons.person, Colors.blue, 'Contact', ctx),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.06),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.add, color: Colors.white54, size: 20),
                     ),
-                    child: const Icon(Icons.add, color: Colors.white54, size: 20),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -809,9 +1099,21 @@ class _ChatScreenState extends State<_ChatScreen> {
                         ),
                         suffixIcon: IconButton(
                           icon: const Icon(Icons.emoji_emotions_outlined, color: Colors.white30, size: 20),
-                          onPressed: () {},
+                          onPressed: () {
+                            FocusScope.of(context).unfocus();
+                            setState(() {
+                              _showEmojiPicker = !_showEmojiPicker;
+                            });
+                          },
                         ),
                       ),
+                      onTap: () {
+                        if (_showEmojiPicker) {
+                          setState(() {
+                            _showEmojiPicker = false;
+                          });
+                        }
+                      },
                       onSubmitted: (_) => _sendMessage(),
                     ),
                   ),
@@ -831,57 +1133,129 @@ class _ChatScreenState extends State<_ChatScreen> {
               ),
             ),
           ),
+          
+          if (_showEmojiPicker)
+            SizedBox(
+              height: 250,
+              child: EmojiPicker(
+                textEditingController: _msgController,
+                config: const Config(
+                  emojiViewConfig: EmojiViewConfig(
+                    backgroundColor: Color(0xFF131A22),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildMessageBubble(_ChatMessage msg, _ContactItem contact) {
+  Widget _buildMessageBubble(MessageModel msg, bool isMe, String time, _ContactItem contact) {
     return Align(
-      alignment: msg.isMe ? Alignment.centerRight : Alignment.centerLeft,
+      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: EdgeInsets.only(
           top: 4,
           bottom: 4,
-          left: msg.isMe ? 60 : 0,
-          right: msg.isMe ? 0 : 60,
+          left: isMe ? 60 : 0,
+          right: isMe ? 0 : 60,
         ),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: msg.isMe
+          color: isMe
               ? const Color(0xFFFFC107).withOpacity(0.15)
               : Colors.white.withOpacity(0.06),
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
-            bottomLeft: msg.isMe ? const Radius.circular(16) : const Radius.circular(4),
-            bottomRight: msg.isMe ? const Radius.circular(4) : const Radius.circular(16),
+            bottomLeft: isMe ? const Radius.circular(16) : const Radius.circular(4),
+            bottomRight: isMe ? const Radius.circular(4) : const Radius.circular(16),
           ),
           border: Border.all(
-            color: msg.isMe
+            color: isMe
                 ? const Color(0xFFFFC107).withOpacity(0.2)
                 : Colors.white.withOpacity(0.04),
           ),
         ),
         child: Column(
-          crossAxisAlignment: msg.isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
-            Text(
-              msg.text,
-              style: TextStyle(
-                color: msg.isMe ? const Color(0xFFFFC107) : Colors.white,
-                fontSize: 14,
+            if (msg.type == 'IMAGE' && msg.mediaUrl != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.network(
+                    '${ApiClient.instance.options.baseUrl}${msg.mediaUrl}',
+                    width: 200,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              )
+            else if (msg.type == 'DOCUMENT' || msg.type == 'AUDIO')
+              Container(
+                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 6),
+                decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(8)),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(msg.type == 'AUDIO' ? Icons.headset : Icons.insert_drive_file, color: isMe ? const Color(0xFFFFC107) : Colors.white70),
+                    const SizedBox(width: 8),
+                    Flexible(child: Text(msg.content, style: TextStyle(color: isMe ? const Color(0xFFFFC107) : Colors.white))),
+                  ],
+                ),
+              )
+            else if (msg.type == 'LOCATION')
+              GestureDetector(
+                onTap: () => launchUrl(Uri.parse('https://maps.google.com/?q=${msg.content}')),
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.only(bottom: 6),
+                  decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(8)),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.location_on, color: isMe ? const Color(0xFFFFC107) : Colors.white70),
+                      const SizedBox(width: 8),
+                      Text('View Location', style: TextStyle(color: isMe ? const Color(0xFFFFC107) : Colors.white, decoration: TextDecoration.underline)),
+                    ],
+                  ),
+                ),
+              )
+            else if (msg.type == 'CONTACT')
+              Container(
+                padding: const EdgeInsets.all(12),
+                margin: const EdgeInsets.only(bottom: 6),
+                decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(8)),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.person, color: isMe ? const Color(0xFFFFC107) : Colors.white70),
+                    const SizedBox(width: 8),
+                    Text(msg.content, style: TextStyle(color: isMe ? const Color(0xFFFFC107) : Colors.white)),
+                  ],
+                ),
               ),
-            ),
+            
+            if (msg.type == 'TEXT')
+              Text(
+                msg.content,
+                style: TextStyle(
+                  color: isMe ? const Color(0xFFFFC107) : Colors.white,
+                  fontSize: 14,
+                ),
+              ),
             const SizedBox(height: 4),
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  msg.time,
+                  time,
                   style: const TextStyle(color: Colors.white30, fontSize: 10),
                 ),
-                if (msg.isMe) ...[
+                if (isMe) ...[
                   const SizedBox(width: 4),
                   const Icon(Icons.done_all, color: Color(0xFF22D3EE), size: 14),
                 ],
@@ -891,6 +1265,77 @@ class _ChatScreenState extends State<_ChatScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildAttachIcon(IconData icon, Color color, String label, BuildContext ctx) {
+    return GestureDetector(
+      onTap: () async {
+        Navigator.pop(ctx);
+        await _handleAttachAction(label);
+      },
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            child: Icon(icon, color: Colors.white, size: 28),
+          ),
+          const SizedBox(height: 8),
+          Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleAttachAction(String action) async {
+    final provider = context.read<ChatProvider>();
+    final role = widget.contact.role.contains('AGENT') ? 'Agent' : 
+                 widget.contact.id == 'admin' ? 'Admin' : 'Staff';
+
+    try {
+      if (action == 'Camera' || action == 'Gallery') {
+        final picker = ImagePicker();
+        final XFile? image = await picker.pickImage(
+          source: action == 'Camera' ? ImageSource.camera : ImageSource.gallery,
+        );
+        if (image != null) {
+          provider.sendMediaMessage(widget.contact.id, role, File(image.path), 'IMAGE', '📷 Image');
+        }
+      } else if (action == 'Document' || action == 'Audio') {
+        final result = await FilePicker.platform.pickFiles(
+          type: action == 'Audio' ? FileType.audio : FileType.any,
+        );
+        if (result != null && result.files.single.path != null) {
+          final file = File(result.files.single.path!);
+          final content = action == 'Audio' ? '🎵 Audio Message' : '📄 ${result.files.single.name}';
+          provider.sendMediaMessage(widget.contact.id, role, file, action.toUpperCase(), content);
+        }
+      } else if (action == 'Location') {
+        LocationPermission permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.denied) {
+          permission = await Geolocator.requestPermission();
+          if (permission == LocationPermission.denied) return;
+        }
+        final position = await Geolocator.getCurrentPosition();
+        final loc = '${position.latitude},${position.longitude}';
+        provider.sendMessage(widget.contact.id, role, loc, type: 'LOCATION');
+      } else if (action == 'Contact') {
+        final status = await FlutterContacts.permissions.request(PermissionType.read);
+        if (status == PermissionStatus.granted || status == PermissionStatus.limited) {
+          final contact = await FlutterContacts.native.showPicker();
+          if (contact != null) {
+            final fullContact = await FlutterContacts.get(contact.id!);
+            if (fullContact != null && fullContact.phones.isNotEmpty) {
+              final content = '${fullContact.displayName}\n${fullContact.phones.first.number}';
+              provider.sendMessage(widget.contact.id, role, content, type: 'CONTACT');
+            }
+          }
+        }
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error processing $action: $e')));
+    }
   }
 }
 
@@ -906,6 +1351,7 @@ class _ContactItem {
   final bool isOnline;
   final String lastMessage;
   final String lastTime;
+  final DateTime? lastMessageTime;
   final int unreadCount;
 
   _ContactItem({
@@ -918,18 +1364,9 @@ class _ContactItem {
     required this.isOnline,
     required this.lastMessage,
     required this.lastTime,
+    this.lastMessageTime,
     required this.unreadCount,
   });
 }
 
-class _ChatMessage {
-  final String text;
-  final bool isMe;
-  final String time;
 
-  _ChatMessage({
-    required this.text,
-    required this.isMe,
-    required this.time,
-  });
-}

@@ -16,6 +16,17 @@ class LeadService {
     }
   }
 
+  Future<List<LeadModel>> getLeadsByStatusAndServiceType(String status, String serviceType) async {
+    try {
+      final response = await _dio.get('/lead?status=$status&serviceType=$serviceType');
+      return (response.data as List)
+          .map((e) => LeadModel.fromJson(e))
+          .toList();
+    } on DioException catch (e) {
+      throw Exception('Failed to load leads: ${e.message}');
+    }
+  }
+
   Future<List<LeadModel>> getLeadsByAgent(String agentId) async {
     try {
       final response = await _dio.get('/lead/agent/$agentId');
@@ -45,11 +56,21 @@ class LeadService {
     }
   }
 
-  Future<void> deleteLead(String id) async {
+  Future<String> generateKycLink(String leadId) async {
     try {
-      await _dio.delete('/lead/$id');
+      final response = await _dio.post('/kyc-upload/generate-link/$leadId');
+      return response.data['url'] as String;
     } on DioException catch (e) {
-      throw Exception('Failed to delete lead: ${e.message}');
+      throw Exception('Failed to generate KYC link: ${e.message}');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getKycDocuments(String leadId) async {
+    try {
+      final response = await _dio.get('/kyc-upload/documents/$leadId');
+      return List<Map<String, dynamic>>.from(response.data);
+    } on DioException catch (e) {
+      throw Exception('Failed to get KYC documents: ${e.message}');
     }
   }
 }

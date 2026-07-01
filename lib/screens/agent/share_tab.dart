@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../providers/app_state_provider.dart';
 import '../../widgets/glass_card.dart';
 
@@ -122,7 +124,7 @@ class AgentShareTab extends StatelessWidget {
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                       onPressed: () {
-                        // Simulated copy to clipboard
+                        Clipboard.setData(ClipboardData(text: referralLink));
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('Referral link copied to clipboard!'),
@@ -131,6 +133,28 @@ class AgentShareTab extends StatelessWidget {
                         );
                       },
                       child: const Icon(Icons.copy, color: Colors.white, size: 18),
+                    ),
+                    const SizedBox(width: 10),
+                    ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        padding: const EdgeInsets.all(12),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      onPressed: () async {
+                        final subject = 'Join the FIC Agent Network!';
+                        final body = 'Hi,\n\nI would like to invite you to join the FIC Agent Network. Register using my referral link and start earning commissions!\n\nReferral Link: $referralLink\n\nBest regards,\nAgent ${agent.name}';
+                        final uri = Uri.parse('mailto:?subject=${Uri.encodeComponent(subject)}&body=${Uri.encodeComponent(body)}');
+                        if (await canLaunchUrl(uri)) {
+                          await launchUrl(uri, mode: LaunchMode.externalApplication);
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Could not launch email client.')),
+                          );
+                        }
+                      },
+                      child: const Icon(Icons.email, color: Colors.white, size: 18),
                     ),
                   ],
                 ),

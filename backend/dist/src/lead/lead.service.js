@@ -23,9 +23,16 @@ let LeadService = class LeadService {
             include: { agent: true },
         });
     }
-    async findAll() {
+    async findAll(status, serviceType) {
+        const where = {};
+        if (status)
+            where.status = status;
+        if (serviceType)
+            where.serviceType = serviceType;
         return this.prisma.lead.findMany({
+            where,
             include: { agent: true },
+            orderBy: { dateCreated: 'desc' },
         });
     }
     async findOne(id) {

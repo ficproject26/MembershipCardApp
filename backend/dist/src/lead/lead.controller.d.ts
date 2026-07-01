@@ -5,7 +5,7 @@ export declare class LeadController {
     private readonly leadService;
     constructor(leadService: LeadService);
     create(createLeadDto: CreateLeadDto): Promise<any>;
-    findAll(): Promise<any>;
+    findAll(status?: string, serviceType?: string): Promise<any>;
     findByAgent(agentId: string): Promise<any>;
     findOne(id: string): Promise<any>;
     update(id: string, updateLeadDto: UpdateLeadDto): Promise<any>;

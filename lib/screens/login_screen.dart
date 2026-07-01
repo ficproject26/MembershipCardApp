@@ -6,6 +6,7 @@ import '../models/user_model.dart';
 import 'admin/admin_shell.dart';
 import 'agent/agent_shell.dart';
 import 'staff/staff_shell.dart';
+import 'staff/it_manager/it_manager_shell.dart';
 import '../models/staff_model.dart';
 import 'tl/tl_shell.dart' as tl;
 
@@ -113,7 +114,11 @@ class _LoginScreenState extends State<LoginScreen> {
       // Try Staff Login
       final staff = await state.staffLogin(emailOrPhone, password);
       if (staff != null) {
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const StaffShell()));
+        if (staff.role == StaffRole.itProjectManager) {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const ITProjectManagerShell()));
+        } else {
+          Navigator.push(context, MaterialPageRoute(builder: (_) => const StaffShell()));
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Welcome back, ${staff.name}!'), backgroundColor: Colors.green),
         );
@@ -768,7 +773,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       onTap: () {
                         state.loginAsStaff(st.id);
                         Navigator.pop(ctx);
-                        Navigator.push(context, MaterialPageRoute(builder: (_) => const StaffShell()));
+                        if (st.role == StaffRole.itProjectManager) {
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const ITProjectManagerShell()));
+                        } else {
+                          Navigator.push(context, MaterialPageRoute(builder: (_) => const StaffShell()));
+                        }
                       },
                       child: Container(
                         width: 140,
