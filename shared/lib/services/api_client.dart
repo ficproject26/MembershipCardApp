@@ -4,7 +4,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 class ApiClient {
-  static const String _baseUrl = kIsWeb ? 'http://localhost:3001' : 'http://10.0.2.2:3001';
+  // Set to true for production, false for local development
+  static const bool _isProduction = true;
+
+  static const String _productionUrl = 'https://membershipcardapp.onrender.com';
+  static const String _devUrl = kIsWeb ? 'http://localhost:3001' : 'http://10.0.2.2:3001';
+
+  static const String _baseUrl = _isProduction ? _productionUrl : _devUrl;
 
   static final Dio _dio = Dio(
     BaseOptions(
