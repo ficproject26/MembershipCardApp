@@ -15,6 +15,7 @@ import { ChatModule } from './chat/chat.module';
 import { StatusModule } from './status/status.module';
 import { KycUploadModule } from './kyc-upload/kyc-upload.module';
 import { EmailModule } from './email/email.module';
+import { RedisModule } from './redis/redis.module';
 
 @Module({
   imports: [
@@ -22,7 +23,7 @@ import { EmailModule } from './email/email.module';
       rootPath: join(process.cwd(), 'uploads'),
       serveRoot: '/uploads/',
     }),
-    PrismaModule, AgentModule, LeadModule, PricingModule, StaffModule, AuthModule, IntegrationsModule, QueueModule, ChatModule, StatusModule, KycUploadModule, EmailModule
+    PrismaModule, AgentModule, LeadModule, PricingModule, StaffModule, AuthModule, IntegrationsModule, QueueModule, ChatModule, StatusModule, KycUploadModule, EmailModule, RedisModule
   ],
   controllers: [AppController],
   providers: [AppService],

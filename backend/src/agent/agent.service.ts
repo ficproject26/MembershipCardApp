@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException, UnauthorizedException, ConflictException, InternalServerErrorException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException, ConflictException, InternalServerErrorException, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { EmailService } from '../email/email.service';
+import { QueueService } from '../queue/queue.service';
+import { RedisService } from '../redis/redis.service';
 import * as crypto from 'crypto';
 
 @Injectable()
@@ -9,7 +10,8 @@ export class AgentService {
 
   constructor(
     private prisma: PrismaService,
-    private emailService: EmailService,
+    private queueService: QueueService,
+    private redisService: RedisService,
   ) {}
 
   private generateAgentCode(): string {
@@ -64,9 +66,8 @@ export class AgentService {
 
       this.logger.log(`Agent created successfully: ${createdAgent.id}`);
 
-      // Send verification email asynchronously (don't block registration)
-      this.emailService.sendVerificationEmail(createdAgent.email, verificationToken)
-        .catch(err => this.logger.error(`Failed to send verification email: ${err.message}`));
+      // Send verification email asynchronously via BullMQ
+      this.queueService.sendVerificationEmail(createdAgent.email, verificationToken);
 
       return {
         ...createdAgent,
@@ -79,21 +80,48 @@ export class AgentService {
     }
   }
 
-  async login(email: string, password?: string) {
+  async login(email: string, password?: string, clientIp: string = 'unknown') {
+    const rateLimitKey = `login_attempts:${clientIp}`;
+    const attemptsStr = await this.redisService.get(rateLimitKey);
+    let attempts = attemptsStr ? parseInt(attemptsStr, 10) : 0;
+
+    if (attempts >= 5) {
+      throw new HttpException('Too many failed login attempts. Please try again in 15 minutes.', HttpStatus.TOO_MANY_REQUESTS);
+    }
+
     const agent = await this.prisma.agent.findUnique({
       where: { email },
     });
+    
     if (!agent) {
+      // Record failed attempt
+      attempts += 1;
+      await this.redisService.set(rateLimitKey, attempts.toString(), 15 * 60); // 15 mins
       throw new NotFoundException('No agent account found with this email');
     }
+    
     if (!agent.password || agent.password !== password) {
+      // Record failed attempt
+      attempts += 1;
+      await this.redisService.set(rateLimitKey, attempts.toString(), 15 * 60);
       throw new UnauthorizedException('Invalid password');
     }
+
+    // Success! Clear failed attempts
+    await this.redisService.del(rateLimitKey);
     return agent;
   }
 
   async findAll() {
-    return this.prisma.agent.findMany();
+    const cachedAgents = await this.redisService.get('agents:all');
+    if (cachedAgents) {
+      this.logger.log('Returning agents from cache');
+      return JSON.parse(cachedAgents);
+    }
+
+    const agents = await this.prisma.agent.findMany();
+    await this.redisService.set('agents:all', JSON.stringify(agents), 60); // Cache for 60s
+    return agents;
   }
 
   async findOne(id: string) {

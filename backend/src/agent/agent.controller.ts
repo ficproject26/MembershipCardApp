@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Ip, Headers } from '@nestjs/common';
 import { AgentService } from './agent.service';
 import { CreateAgentDto } from './dto/create-agent.dto';
 import { UpdateAgentDto } from './dto/update-agent.dto';
@@ -13,8 +13,13 @@ export class AgentController {
   }
 
   @Post('login')
-  login(@Body() body: { email: string; password?: string }) {
-    return this.agentService.login(body.email, body.password);
+  login(
+    @Body() body: { email: string; password?: string },
+    @Ip() ip: string,
+    @Headers('x-forwarded-for') forwardedIp?: string
+  ) {
+    const clientIp = forwardedIp || ip || 'unknown';
+    return this.agentService.login(body.email, body.password, clientIp);
   }
 
   @Get()

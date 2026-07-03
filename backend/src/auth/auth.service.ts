@@ -1,13 +1,13 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { EmailService } from '../email/email.service';
+import { QueueService } from '../queue/queue.service';
 import * as crypto from 'crypto';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
-    private emailService: EmailService,
+    private queueService: QueueService,
   ) {}
 
   async verifyEmail(token: string) {
@@ -48,7 +48,7 @@ export class AuthService {
       },
     });
 
-    await this.emailService.sendPasswordResetEmail(agent.email, resetToken);
+    this.queueService.sendPasswordResetEmail(agent.email, resetToken);
 
     return { message: 'If an account with that email exists, a reset link has been sent.' };
   }
