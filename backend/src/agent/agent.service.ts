@@ -1,9 +1,14 @@
 import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { EmailService } from '../email/email.service';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class AgentService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private emailService: EmailService,
+  ) {}
 
   async create(createAgentDto: any) {
     const { referredBy, ...rest } = createAgentDto;
@@ -18,12 +23,18 @@ export class AgentService {
       }
     }
 
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+
     const createdAgent = await this.prisma.agent.create({
       data: {
         ...rest,
-        ...(referredById ? { referredById } : {})
+        ...(referredById ? { referredById } : {}),
+        verificationToken,
       },
     });
+
+    // Send verification email asynchronously
+    this.emailService.sendVerificationEmail(createdAgent.email, verificationToken);
 
     return {
       ...createdAgent,

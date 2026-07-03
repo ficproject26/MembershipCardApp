@@ -14,6 +14,7 @@ import { QueueModule } from './queue/queue.module';
 import { ChatModule } from './chat/chat.module';
 import { StatusModule } from './status/status.module';
 import { KycUploadModule } from './kyc-upload/kyc-upload.module';
+import { EmailModule } from './email/email.module';
 
 @Module({
   imports: [
@@ -21,7 +22,7 @@ import { KycUploadModule } from './kyc-upload/kyc-upload.module';
       rootPath: join(process.cwd(), 'uploads'),
       serveRoot: '/uploads/',
     }),
-    PrismaModule, AgentModule, LeadModule, PricingModule, StaffModule, AuthModule, IntegrationsModule, QueueModule, ChatModule, StatusModule, KycUploadModule
+    PrismaModule, AgentModule, LeadModule, PricingModule, StaffModule, AuthModule, IntegrationsModule, QueueModule, ChatModule, StatusModule, KycUploadModule, EmailModule
   ],
   controllers: [AppController],
   providers: [AppService],
