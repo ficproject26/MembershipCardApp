@@ -16,6 +16,11 @@ export class StaffController {
     return this.staffService.login(body.email, body.password);
   }
 
+  @Get('hr-dashboard/stats')
+  getHrDashboardStats() {
+    return this.staffService.getHrDashboardStats();
+  }
+
   @Get()
   findAll() {
     return this.staffService.findAll();

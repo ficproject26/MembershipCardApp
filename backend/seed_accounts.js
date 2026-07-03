@@ -1,13 +1,9 @@
 const { PrismaClient } = require('@prisma/client');
-const { PrismaBetterSqlite3 } = require('@prisma/adapter-better-sqlite3');
-const path = require('path');
 
-const dbPath = path.resolve(__dirname, 'dev.db');
-const adapter = new PrismaBetterSqlite3({ url: dbPath });
-const prisma = new PrismaClient({ adapter });
+const prisma = new PrismaClient();
 
 async function main() {
-  console.log('Seeding demo accounts to:', dbPath);
+  console.log('Seeding demo accounts...');
 
   // Seed Agents
   const agents = [

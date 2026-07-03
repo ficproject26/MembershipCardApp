@@ -1,11 +1,14 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import * as fs from 'fs';
+import { S3Service } from '../integrations/s3/s3.service';
 import * as path from 'path';
 
 @Injectable()
 export class KycUploadService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private s3Service: S3Service,
+  ) {}
 
   async generateLink(leadId: string) {
     const lead = await this.prisma.lead.findUnique({
@@ -40,9 +43,22 @@ export class KycUploadService {
   }
 
   async getDocumentsByLead(leadId: string) {
-    return this.prisma.kycDocument.findMany({
+    const docs = await this.prisma.kycDocument.findMany({
       where: { leadId },
     });
+
+    // Generate signed URLs for S3 objects
+    return Promise.all(docs.map(async (doc: any) => {
+      // Check if it's an S3 key or a legacy local path (just in case)
+      let url = doc.filePath;
+      if (!url.startsWith('/uploads/')) {
+        url = await this.s3Service.getSignedUrl(doc.filePath);
+      }
+      return {
+        ...doc,
+        url, // Add signed URL to response
+      };
+    }));
   }
 
   async submitKyc(
@@ -64,11 +80,6 @@ export class KycUploadService {
       throw new NotFoundException('Invalid or expired KYC link');
     }
 
-    const uploadDir = path.join(process.cwd(), 'uploads', 'kyc', lead.id);
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-
     const docTypes = [
       'aadhaar_front',
       'aadhaar_back',
@@ -88,12 +99,10 @@ export class KycUploadService {
       const file = fileArr[0];
       const ext = path.extname(file.originalname);
       const fileName = `${docType}${ext}`;
-      const filePath = path.join(uploadDir, fileName);
+      const s3Key = `kyc/${lead.id}/${fileName}`;
 
-      fs.writeFileSync(filePath, file.buffer);
-
-      // Relative path to be served statically
-      const relativePath = `/uploads/kyc/${lead.id}/${fileName}`;
+      // Upload to S3
+      await this.s3Service.upload(s3Key, file.buffer, file.mimetype);
 
       // Check if document already exists to overwrite, or create a new one
       const existingDoc = await this.prisma.kycDocument.findFirst({
@@ -105,7 +114,7 @@ export class KycUploadService {
         doc = await this.prisma.kycDocument.update({
           where: { id: existingDoc.id },
           data: {
-            filePath: relativePath,
+            filePath: s3Key,
             aadhaarNumber: docType.startsWith('aadhaar') ? body.aadhaarNumber : null,
             panNumber: docType === 'pan_card' ? body.panNumber : null,
             uploadedAt: new Date(),
@@ -116,7 +125,7 @@ export class KycUploadService {
           data: {
             leadId: lead.id,
             docType,
-            filePath: relativePath,
+            filePath: s3Key,
             aadhaarNumber: docType.startsWith('aadhaar') ? body.aadhaarNumber : null,
             panNumber: docType === 'pan_card' ? body.panNumber : null,
           },

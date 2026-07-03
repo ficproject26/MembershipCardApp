@@ -5,6 +5,7 @@ import { EmailService } from './email/email.service';
 import { RazorpayService } from './razorpay/razorpay.service';
 
 @Module({
-  providers: [S3Service, FcmService, EmailService, RazorpayService]
+  providers: [S3Service, FcmService, EmailService, RazorpayService],
+  exports: [S3Service, FcmService, EmailService, RazorpayService]
 })
 export class IntegrationsModule {}
