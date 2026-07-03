@@ -16,6 +16,7 @@ export 'services/agent_service.dart';
 export 'services/lead_service.dart';
 export 'services/pricing_service.dart';
 export 'services/staff_service.dart';
+export 'services/notification_service.dart';
 
 // Providers
 export 'providers/app_state_provider.dart';

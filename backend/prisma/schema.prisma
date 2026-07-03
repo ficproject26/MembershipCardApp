@@ -31,6 +31,7 @@ model Agent {
   bankIfscCode      String?
   bankAccountName   String?
   photoUrl          String?
+  fcmToken      String?
   dateJoined    DateTime       @default(now())
 
   leads         Lead[]
@@ -98,6 +99,7 @@ model Staff {
   role        String   // HR, KYC, CreditCardTL, LoanTL, etc.
   department  String?
   password    String?
+  fcmToken    String?
   dateJoined  DateTime @default(now())
 }
 

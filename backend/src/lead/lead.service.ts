@@ -1,9 +1,15 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
+import { FcmService } from '../integrations/fcm/fcm.service';
 
 @Injectable()
 export class LeadService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(LeadService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private fcmService: FcmService,
+  ) {}
 
   async create(createLeadDto: any) {
     return this.prisma.lead.create({
@@ -38,10 +44,23 @@ export class LeadService {
   }
 
   async update(id: string, updateLeadDto: any) {
-    return this.prisma.lead.update({
+    const lead = await this.prisma.lead.update({
       where: { id },
       data: updateLeadDto,
+      include: { agent: true },
     });
+
+    // Send push notification to agent when lead status changes
+    if (updateLeadDto.status && lead.agent?.fcmToken) {
+      this.fcmService.sendToDevice(
+        lead.agent.fcmToken,
+        'Lead Status Updated',
+        `Your lead "${lead.customerName || 'Unknown'}" is now: ${updateLeadDto.status}`,
+        { leadId: id, status: updateLeadDto.status },
+      ).catch(err => this.logger.error(`Notification failed: ${err.message}`));
+    }
+
+    return lead;
   }
 
   async remove(id: string) {

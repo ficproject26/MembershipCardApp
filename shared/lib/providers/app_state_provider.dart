@@ -12,6 +12,7 @@ import '../services/agent_service.dart';
 import '../services/lead_service.dart' as ls;
 import '../services/pricing_service.dart';
 import '../services/staff_service.dart';
+import '../services/notification_service.dart';
 
 class AppStateProvider extends ChangeNotifier {
   // Services
@@ -103,6 +104,8 @@ class AppStateProvider extends ChangeNotifier {
     _currentAgentId = agentId;
     _currentStaffId = null;
     fetchAgentLeads(agentId);
+    // Register FCM token
+    NotificationService().registerToken(agentId, 'agent');
     notifyListeners();
   }
 
@@ -113,6 +116,8 @@ class AppStateProvider extends ChangeNotifier {
     _currentStaffId = staffId;
     _currentAgentId = null;
     fetchAllData();
+    // Register FCM token
+    NotificationService().registerToken(staffId, 'staff');
     notifyListeners();
   }
 
