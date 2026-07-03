@@ -531,7 +531,7 @@ class _HrDashboardMainState extends State<HrDashboardMain> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => HrApplicationDetails(leadId: app['id'] as String),
+                  builder: (context) => HrApplicationDetails(leadId: app.id),
                 ),
               );
             },

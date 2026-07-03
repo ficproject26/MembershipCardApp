@@ -147,7 +147,7 @@ class _HrApplicationDetailsState extends State<HrApplicationDetails> {
                   ],
                 ),
               ),
-              _buildStatusBadge(lead.status),
+              _buildStatusBadge(lead.status.name),
             ],
           ),
           const Divider(height: 32),
@@ -161,7 +161,7 @@ class _HrApplicationDetailsState extends State<HrApplicationDetails> {
           Row(
             children: [
               Expanded(child: _buildInfoItem('Date Applied', lead.dateCreated.toString().split(' ')[0], Icons.calendar_today, textColor, textMuted)),
-              Expanded(child: _buildInfoItem('Agent Code', lead.agentId ?? 'Direct', Icons.person_pin, textColor, textMuted)),
+              Expanded(child: _buildInfoItem('Agent Code', lead.agentCode ?? 'Direct', Icons.person_pin, textColor, textMuted)),
             ],
           ),
         ],
