@@ -7,8 +7,9 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 class VideoPlayerWidget extends StatefulWidget {
   final String? url;
   final File? file;
+  final VoidCallback? onReady;
 
-  const VideoPlayerWidget({Key? key, this.url, this.file}) : super(key: key);
+  const VideoPlayerWidget({Key? key, this.url, this.file, this.onReady}) : super(key: key);
 
   @override
   State<VideoPlayerWidget> createState() => _VideoPlayerWidgetState();
@@ -17,6 +18,7 @@ class VideoPlayerWidget extends StatefulWidget {
 class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
   late VideoPlayerController _controller;
   bool _initialized = false;
+  bool _hasError = false;
 
   @override
   void initState() {
@@ -41,9 +43,21 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
         });
         _controller.setLooping(true);
         _controller.play();
+        if (widget.onReady != null) {
+          widget.onReady!();
+        }
       }
     }).catchError((error) {
       print("Error initializing video player: $error");
+      if (mounted) {
+        setState(() {
+          _hasError = true;
+        });
+        if (widget.onReady != null) {
+          // Trigger onReady anyway so the animation can proceed or the user can skip
+          widget.onReady!();
+        }
+      }
     });
   }
 
@@ -55,6 +69,18 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
 
   @override
   Widget build(BuildContext context) {
+    if (_hasError) {
+      return const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.broken_image, color: Colors.white54, size: 48),
+            SizedBox(height: 16),
+            Text('Video not found or failed to load', style: TextStyle(color: Colors.white54)),
+          ],
+        ),
+      );
+    }
     if (!_initialized) {
       return const Center(child: CircularProgressIndicator(color: Color(0xFFFFC107)));
     }

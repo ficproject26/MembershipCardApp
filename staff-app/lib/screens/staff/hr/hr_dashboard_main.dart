@@ -600,7 +600,7 @@ class _HrDashboardMainState extends State<HrDashboardMain> {
                   children: [
                     Text('Applied on: ${app.date}', style: TextStyle(fontSize: 12, color: textMuted)),
                     OutlinedButton(
-                      onPressed: () {},
+                      onPressed: () => _showStatusUpdateDialog(context, app),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: accentYellow,
                         side: BorderSide(color: accentYellow.withValues(alpha: 0.5)),
@@ -639,6 +639,91 @@ class _HrDashboardMainState extends State<HrDashboardMain> {
         status,
         style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 12),
       ),
+    );
+  }
+
+  void _showStatusUpdateDialog(BuildContext context, HrRecentApplication app) {
+    String selectedStatus = app.status;
+    final statuses = ['Pending', 'In Process', 'Interview', 'Selected', 'Rejected'];
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: cardDark,
+              title: const Text('Update Status', style: TextStyle(color: Colors.white)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text('Application: ${app.name}', style: const TextStyle(color: Colors.white70)),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    decoration: BoxDecoration(
+                      color: primaryDark,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white10),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        dropdownColor: primaryDark,
+                        value: statuses.contains(selectedStatus) ? selectedStatus : 'Pending',
+                        isExpanded: true,
+                        icon: const Icon(Icons.arrow_drop_down, color: Colors.white54),
+                        items: statuses.map((String status) {
+                          return DropdownMenuItem<String>(
+                            value: status,
+                            child: Text(status, style: const TextStyle(color: Colors.white)),
+                          );
+                        }).toList(),
+                        onChanged: (String? newValue) {
+                          if (newValue != null) {
+                            setDialogState(() {
+                              selectedStatus = newValue;
+                            });
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    Navigator.pop(ctx);
+                    try {
+                      await LeadService().updateLead(app.id, {'status': selectedStatus});
+                      setState(() {
+                        _dashboardStatsFuture = StaffService().getHrDashboardStats();
+                      });
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Status updated successfully'), backgroundColor: Colors.green),
+                        );
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Failed to update status: $e'), backgroundColor: Colors.red),
+                        );
+                      }
+                    }
+                  },
+                  child: Text('Update', style: TextStyle(color: accentYellow, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }

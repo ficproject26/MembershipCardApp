@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/status_provider.dart';
+import '../../services/api_client.dart';
 import 'video_player_widget.dart';
 
 class StoryViewerWidget extends StatefulWidget {
@@ -23,6 +24,7 @@ class _StoryViewerWidgetState extends State<StoryViewerWidget> with SingleTicker
   late PageController _pageController;
   late AnimationController _animationController;
   int _currentIndex = 0;
+  bool _isMediaLoaded = false;
 
   @override
   void initState() {
@@ -40,15 +42,20 @@ class _StoryViewerWidgetState extends State<StoryViewerWidget> with SingleTicker
   void _startAnimation() {
     _animationController.stop();
     _animationController.reset();
+    _isMediaLoaded = false;
     
-    // Pause animation for video types since video player handles its own duration
-    // Actually, for a quick implementation, we can just use 5 seconds for everything or 10s for video
-    if (widget.statuses[_currentIndex].type == 'VIDEO') {
+    final currentStatus = widget.statuses[_currentIndex];
+    if (currentStatus.type == 'VIDEO') {
       _animationController.duration = const Duration(seconds: 15);
+      // Will start animation when onReady is called
+    } else if (currentStatus.type == 'IMAGE') {
+      _animationController.duration = const Duration(seconds: 5);
+      // Will start animation when loadingBuilder reports loadingProgress == null
     } else {
       _animationController.duration = const Duration(seconds: 5);
+      _isMediaLoaded = true;
+      _animationController.forward();
     }
-    _animationController.forward();
   }
 
   void _nextStory() {
@@ -98,9 +105,7 @@ class _StoryViewerWidgetState extends State<StoryViewerWidget> with SingleTicker
     final statusId = widget.statuses[_currentIndex].id;
     final success = await Provider.of<StatusProvider>(context, listen: false).deleteStatus(statusId);
     if (success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Status deleted!'), backgroundColor: Color(0xFF10B981)),
-      );
+      showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Status deleted!'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
       Navigator.pop(context);
     } else {
       _animationController.forward();
@@ -144,11 +149,59 @@ class _StoryViewerWidgetState extends State<StoryViewerWidget> with SingleTicker
                 itemCount: widget.statuses.length,
                 itemBuilder: (context, index) {
                   final s = widget.statuses[index];
+                  final baseUrl = ApiClient.instance.options.baseUrl;
                   return Center(
                     child: s.type == 'IMAGE' && s.mediaUrl != null
-                      ? Image.network('http://10.0.2.2:3001${s.mediaUrl}', fit: BoxFit.contain)
+                      ? Image.network(
+                          '$baseUrl${s.mediaUrl}', 
+                          fit: BoxFit.contain,
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) {
+                              if (index == _currentIndex && !_isMediaLoaded) {
+                                WidgetsBinding.instance.addPostFrameCallback((_) {
+                                  if (mounted) {
+                                    setState(() { _isMediaLoaded = true; });
+                                    _animationController.forward();
+                                  }
+                                });
+                              }
+                              return child;
+                            }
+                            return const Center(child: CircularProgressIndicator(color: Color(0xFFFFC107)));
+                          },
+                          errorBuilder: (context, error, stackTrace) {
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              if (mounted && index == _currentIndex && !_isMediaLoaded) {
+                                setState(() { _isMediaLoaded = true; });
+                                _animationController.forward();
+                              }
+                            });
+                            return const Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.broken_image, color: Colors.white54, size: 48),
+                                  SizedBox(height: 16),
+                                  Text('Image not found', style: TextStyle(color: Colors.white54)),
+                                ],
+                              ),
+                            );
+                          },
+                        )
                       : s.type == 'VIDEO' && s.mediaUrl != null
-                        ? VideoPlayerWidget(url: 'http://10.0.2.2:3001${s.mediaUrl}')
+                        ? AbsorbPointer(
+                            child: VideoPlayerWidget(
+                              url: '$baseUrl${s.mediaUrl}',
+                              onReady: () {
+                                if (index == _currentIndex && !_isMediaLoaded) {
+                                  if (mounted) {
+                                    setState(() { _isMediaLoaded = true; });
+                                    _animationController.forward();
+                                  }
+                                }
+                              },
+                            ),
+                          )
                         : Padding(
                             padding: const EdgeInsets.all(24.0),
                             child: Text(

@@ -75,7 +75,7 @@ export class NotificationController {
       select: { fcmToken: true },
     });
 
-    const tokens = agents.map(a => a.fcmToken!).filter(Boolean);
+    const tokens = agents.map((a: any) => a.fcmToken!).filter(Boolean);
     if (!tokens.length) {
       return { success: false, message: 'No agents with FCM tokens found' };
     }

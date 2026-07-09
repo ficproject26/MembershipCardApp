@@ -206,12 +206,12 @@ class _AdminStaffTabState extends State<AdminStaffTab> with SingleTickerProvider
                               if (staff != null) {
                                 _formKey.currentState!.reset();
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Staff member ${staff.name} successfully registered!'), backgroundColor: Colors.green),
+                                  SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), content: Text('Staff member ${staff.name} successfully registered!'), backgroundColor: Colors.green),
                                 );
                                 _tabController.animateTo(0);
                               } else if (state.error != null) {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text(state.error!), backgroundColor: Colors.red),
+                                  SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), content: Text(state.error!), backgroundColor: Colors.red),
                                 );
                               }
                             }

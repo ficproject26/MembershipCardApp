@@ -28,42 +28,47 @@ class NotificationService {
 
   /// Initialize notifications - call from main.dart after Firebase.initializeApp()
   Future<void> initialize() async {
-    // Request permission
-    final settings = await _fcm.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-      provisional: false,
-    );
+    try {
+      // Request permission
+      final settings = await _fcm.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+        provisional: false,
+      );
 
-    debugPrint('Notification permission: ${settings.authorizationStatus}');
+      debugPrint('Notification permission: ${settings.authorizationStatus}');
 
-    if (settings.authorizationStatus == AuthorizationStatus.authorized ||
-        settings.authorizationStatus == AuthorizationStatus.provisional) {
-      // Get FCM token
-      _fcmToken = await _fcm.getToken();
-      debugPrint('FCM Token: $_fcmToken');
+      if (settings.authorizationStatus == AuthorizationStatus.authorized ||
+          settings.authorizationStatus == AuthorizationStatus.provisional) {
+        // Get FCM token
+        _fcmToken = await _fcm.getToken();
+        debugPrint('FCM Token: $_fcmToken');
 
-      // Listen for token refresh
-      _fcm.onTokenRefresh.listen((newToken) {
-        _fcmToken = newToken;
-        debugPrint('FCM Token refreshed: $newToken');
-      });
+        // Listen for token refresh
+        _fcm.onTokenRefresh.listen((newToken) {
+          _fcmToken = newToken;
+          debugPrint('FCM Token refreshed: $newToken');
+        });
 
-      // Initialize local notifications for foreground display
-      await _initLocalNotifications();
+        // Initialize local notifications for foreground display
+        await _initLocalNotifications();
 
-      // Handle foreground messages
-      FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
+        // Handle foreground messages
+        FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
 
-      // Handle notification taps when app is in background
-      FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
+        // Handle notification taps when app is in background
+        FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
 
-      // Handle notification taps when app is terminated
-      final initialMessage = await _fcm.getInitialMessage();
-      if (initialMessage != null) {
-        _handleNotificationTap(initialMessage);
+        // Handle notification taps when app is terminated
+        final initialMessage = await _fcm.getInitialMessage();
+        if (initialMessage != null) {
+          _handleNotificationTap(initialMessage);
+        }
       }
+    } catch (e) {
+      debugPrint('NotificationService.initialize() failed: $e');
+      // Don't rethrow — allow the app to continue without notifications
     }
   }
 

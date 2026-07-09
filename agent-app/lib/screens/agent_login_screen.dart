@@ -34,6 +34,21 @@ class _AgentLoginScreenState extends State<AgentLoginScreen> {
   final Color goldColor = const Color(0xFFFACC15);
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final state = Provider.of<AppStateProvider>(context, listen: false);
+      state.fetchPricing();
+      state.fetchCommissions();
+    });
+    // Auto-populate referral code if present in the URL query parameters
+    final ref = Uri.base.queryParameters['ref'];
+    if (ref != null && ref.isNotEmpty) {
+      _regReferralController.text = ref;
+    }
+  }
+
+  @override
   void dispose() {
     _phoneController.dispose();
     _passwordController.dispose();
@@ -136,9 +151,7 @@ class _AgentLoginScreenState extends State<AgentLoginScreen> {
                         onPressed: () async {
                           final email = emailController.text.trim();
                           if (email.isEmpty || !email.contains('@')) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Please enter a valid email address.')),
-                            );
+                            showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Please enter a valid email address.'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
                             return;
                           }
 
@@ -195,7 +208,7 @@ class _AgentLoginScreenState extends State<AgentLoginScreen> {
       if (agent != null) {
         Navigator.push(context, MaterialPageRoute(builder: (_) => const AgentShell()));
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Welcome back, ${agent.name}!'), backgroundColor: Colors.green),
+          SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), content: Text('Welcome back, ${agent.name}!'), backgroundColor: Colors.green),
         );
         return;
       } else {
@@ -633,7 +646,7 @@ class _AgentLoginScreenState extends State<AgentLoginScreen> {
                   _regPhoneController.text.trim().isEmpty ||
                   _regEmailController.text.trim().isEmpty ||
                   _regPasswordController.text.trim().isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill in Name, Phone, Email, and Password.')));
+                showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Please fill in Name, Phone, Email, and Password.'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
                 return;
               }
               _simulateRegisterCheckout(context, state);
@@ -740,12 +753,12 @@ class _AgentLoginScreenState extends State<AgentLoginScreen> {
     if (newAgent != null) {
       state.loginAsAgent(newAgent.id);
       Navigator.push(context, MaterialPageRoute(builder: (_) => const AgentShell()));
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), 
         content: Text('Registered successfully! Your new code is ${newAgent.agentCode}'),
         backgroundColor: Colors.green,
       ));
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), 
         content: Text('Registration failed: ${state.error ?? "Unknown error"}'),
         backgroundColor: Colors.red,
       ));

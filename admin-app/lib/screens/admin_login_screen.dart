@@ -67,9 +67,9 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     if (email == 'admin@fic.com' && password == 'admin123') {
       state.loginAsAdmin();
       if (!mounted) return;
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminShell()));
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const AdminShell()));
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Welcome back, Admin!'), backgroundColor: Colors.green),
+        SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), content: Text('Welcome back, Admin!'), backgroundColor: Colors.green),
       );
       return;
     } else {

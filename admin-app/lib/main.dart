@@ -6,12 +6,25 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared/shared.dart';
 import 'screens/admin_login_screen.dart';
 
+@pragma('vm:entry-point')
+Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    debugPrint('Background Firebase init error: $e');
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  await Firebase.initializeApp();
-  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-  await NotificationService().initialize();
+  try {
+    await Firebase.initializeApp();
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+    await NotificationService().initialize();
+  } catch (e) {
+    debugPrint('Firebase initialization error: $e');
+  }
   
   runApp(
     MultiProvider(
@@ -30,12 +43,10 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final state = Provider.of<AppStateProvider>(context);
-
     return MaterialApp(
       title: 'FIC Admin Portal',
       debugShowCheckedModeBanner: false,
-      themeMode: state.isDarkMode ? ThemeMode.dark : ThemeMode.light,
+      themeMode: ThemeMode.dark,
       
       // FIC Membership Club Light Theme (Gold + Navy Blue)
       theme: ThemeData(
@@ -47,7 +58,6 @@ class MyApp extends StatelessWidget {
           secondary: const Color(0xFFFFC107),
           surface: Colors.white,
         ),
-        textTheme: GoogleFonts.outfitTextTheme(ThemeData.light().textTheme),
         useMaterial3: true,
       ),
 
@@ -59,9 +69,8 @@ class MyApp extends StatelessWidget {
           seedColor: const Color(0xFF1A3B6E),
           primary: const Color(0xFFFFC107),
           secondary: const Color(0xFF1A3B6E),
-          surface: const Color(0xFF0D1B2A),
+          surface: const Color(0xFF0C1017),
         ),
-        textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme),
         useMaterial3: true,
       ),
       

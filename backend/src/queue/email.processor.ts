@@ -22,6 +22,9 @@ export class EmailProcessor extends WorkerHost {
         case 'passwordReset':
           await this.emailService.sendPasswordResetEmail(job.data.to, job.data.token);
           break;
+        case 'welcome':
+          await this.emailService.sendWelcomeEmail(job.data.to, job.data.name);
+          break;
         default:
           this.logger.warn(`Unknown email job type: ${job.name}`);
       }

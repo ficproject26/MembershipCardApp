@@ -1,7 +1,7 @@
 import 'user_model.dart';
 
 class MembershipPricing {
-  final int? id;
+  final String? id;
   final MembershipTier tier;
   final double price;
   final List<String> benefits;
@@ -23,7 +23,7 @@ class MembershipPricing {
     }
 
     return MembershipPricing(
-      id: json['id'] as int?,
+      id: json['id'] as String?,
       tier: MembershipTier.values.firstWhere(
         (e) => e.name == (json['tier'] as String? ?? 'Silver'),
         orElse: () => MembershipTier.Silver,
@@ -43,32 +43,40 @@ class MembershipPricing {
 }
 
 class CommissionConfig {
-  final int? id;
+  final String? id;
   final String serviceType;
-  final double directRate;
-  final double indirectRate;
+  final double silverRate;
+  final double goldRate;
+  final double diamondRate;
+  final double platinumRate;
 
   CommissionConfig({
     this.id,
     required this.serviceType,
-    required this.directRate,
-    required this.indirectRate,
+    required this.silverRate,
+    required this.goldRate,
+    required this.diamondRate,
+    required this.platinumRate,
   });
 
   factory CommissionConfig.fromJson(Map<String, dynamic> json) {
     return CommissionConfig(
-      id: json['id'] as int?,
+      id: json['id'] as String?,
       serviceType: json['serviceType'] as String,
-      directRate: (json['directRate'] as num?)?.toDouble() ?? 0.0,
-      indirectRate: (json['indirectRate'] as num?)?.toDouble() ?? 0.0,
+      silverRate: (json['silverRate'] as num?)?.toDouble() ?? 0.0,
+      goldRate: (json['goldRate'] as num?)?.toDouble() ?? 0.0,
+      diamondRate: (json['diamondRate'] as num?)?.toDouble() ?? 0.0,
+      platinumRate: (json['platinumRate'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'serviceType': serviceType,
-      'directRate': directRate,
-      'indirectRate': indirectRate,
+      'silverRate': silverRate,
+      'goldRate': goldRate,
+      'diamondRate': diamondRate,
+      'platinumRate': platinumRate,
     };
   }
 }

@@ -13,6 +13,7 @@ import '../services/lead_service.dart' as ls;
 import '../services/pricing_service.dart';
 import '../services/staff_service.dart';
 import '../services/notification_service.dart';
+import '../services/commission_service.dart';
 
 class AppStateProvider extends ChangeNotifier {
   // Services
@@ -20,6 +21,7 @@ class AppStateProvider extends ChangeNotifier {
   final ls.LeadService _leadService = ls.LeadService();
   final PricingService _pricingService = PricingService();
   final StaffService _staffService = StaffService();
+  final CommissionService _commissionService = CommissionService();
 
   // Theme State
   bool _isDarkMode = true;
@@ -35,10 +37,12 @@ class AppStateProvider extends ChangeNotifier {
   bool _isLoadingLeads = false;
   bool _isLoadingPricing = false;
   bool _isLoadingStaff = false;
+  bool _isLoadingCommissions = false;
   bool get isLoadingAgents => _isLoadingAgents;
   bool get isLoadingLeads => _isLoadingLeads;
   bool get isLoadingPricing => _isLoadingPricing;
   bool get isLoadingStaff => _isLoadingStaff;
+  bool get isLoadingCommissions => _isLoadingCommissions;
 
   String? _error;
   String? get error => _error;
@@ -139,13 +143,28 @@ class AppStateProvider extends ChangeNotifier {
   ];
   List<MembershipPricing> get pricings => _pricings;
 
+  double getTierRate(CommissionConfig config, MembershipTier tier) {
+    switch (tier) {
+      case MembershipTier.Silver:
+        return config.silverRate;
+      case MembershipTier.Gold:
+        return config.goldRate;
+      case MembershipTier.Diamond:
+        return config.diamondRate;
+      case MembershipTier.Platinum:
+        return config.platinumRate;
+    }
+  }
+
   List<CommissionConfig> _commissions = [
-    CommissionConfig(serviceType: 'Credit Card', directRate: 0.12, indirectRate: 0.03),
-    CommissionConfig(serviceType: 'Loan', directRate: 0.10, indirectRate: 0.02),
-    CommissionConfig(serviceType: 'Jobs', directRate: 0.08, indirectRate: 0.015),
-    CommissionConfig(serviceType: 'Insurance', directRate: 0.15, indirectRate: 0.04),
-    CommissionConfig(serviceType: 'IT Projects', directRate: 0.20, indirectRate: 0.05),
-    CommissionConfig(serviceType: 'BPO Services', directRate: 0.18, indirectRate: 0.045),
+    CommissionConfig(serviceType: 'Credit Card', silverRate: 1000.0, goldRate: 1500.0, diamondRate: 1800.0, platinumRate: 2000.0),
+    CommissionConfig(serviceType: 'Loan', silverRate: 1200.0, goldRate: 1800.0, diamondRate: 2200.0, platinumRate: 2500.0),
+    CommissionConfig(serviceType: 'Jobs', silverRate: 400.0, goldRate: 700.0, diamondRate: 900.0, platinumRate: 1000.0),
+    CommissionConfig(serviceType: 'Insurance', silverRate: 1500.0, goldRate: 2200.0, diamondRate: 2700.0, platinumRate: 3000.0),
+    CommissionConfig(serviceType: 'IT Projects', silverRate: 3000.0, goldRate: 4500.0, diamondRate: 5500.0, platinumRate: 6000.0),
+    CommissionConfig(serviceType: 'BPO Services', silverRate: 2500.0, goldRate: 3500.0, diamondRate: 4500.0, platinumRate: 5000.0),
+    CommissionConfig(serviceType: 'App Referral', silverRate: 300.0, goldRate: 500.0, diamondRate: 600.0, platinumRate: 700.0),
+    CommissionConfig(serviceType: 'Plan Upgrade', silverRate: 500.0, goldRate: 800.0, diamondRate: 1000.0, platinumRate: 1200.0),
   ];
   List<CommissionConfig> get commissions => _commissions;
 
@@ -175,11 +194,14 @@ class AppStateProvider extends ChangeNotifier {
     'Insurance': '• Submit KYC documents along with application.',
     'IT Projects': '• Clearly define scope and budget before submitting.',
     'BPO Services': '• Minimum 5 agents required for contract.',
+    'Plan Upgrade': '• Earn commission when your referred agent upgrades their membership tier.',
   };
   Map<String, String> get eligibleNotes => _eligibleNotes;
 
   AppStateProvider() {
-    fetchAllData();
+    Future.microtask(() {
+      fetchAllData();
+    });
   }
 
   Future<AgentModel?> registerAgent({
@@ -202,6 +224,44 @@ class AppStateProvider extends ChangeNotifier {
         if (referredBy != null && referredBy.isNotEmpty) 'referredBy': referredBy,
       });
       _agents.add(newAgent);
+      
+      // Issue App Referral Commission if referredBy is present
+      if (referredBy != null && referredBy.isNotEmpty) {
+        CommissionConfig refConfig = _commissions.firstWhere(
+          (c) => c.serviceType == 'App Referral',
+          orElse: () => CommissionConfig(serviceType: 'App Referral', silverRate: 300.0, goldRate: 500.0, diamondRate: 600.0, platinumRate: 700.0),
+        );
+
+        int refIdx = _agents.indexWhere((a) => a.agentCode == referredBy);
+        if (refIdx != -1) {
+          final refAg = _agents[refIdx];
+          final payout = getTierRate(refConfig, refAg.membership);
+
+          final updatedRefAg = refAg.copyWith(
+            walletBalance: refAg.walletBalance + payout,
+            totalEarnings: refAg.totalEarnings + payout,
+          );
+          _agents[refIdx] = updatedRefAg;
+
+          try {
+            await _agentService.updateAgent(refAg.id, {
+              'walletBalance': updatedRefAg.walletBalance,
+              'totalEarnings': updatedRefAg.totalEarnings,
+            });
+          } catch (_) {}
+
+          _transactions.insert(0, TransactionModel(
+            id: 'tx_${Random().nextInt(1000000)}',
+            agentCode: refAg.agentCode,
+            amount: payout,
+            type: TransactionType.DirectCommission,
+            status: TransactionStatus.Success,
+            description: 'Direct Comm. for App Referral (${newAgent.name})',
+            date: DateTime.now(),
+          ));
+        }
+      }
+
       addNotification('New agent ${newAgent.name} joined as ${newAgent.membership.name} tier!');
       notifyListeners();
       return newAgent;
@@ -291,6 +351,7 @@ class AppStateProvider extends ChangeNotifier {
       fetchStaff(),
       fetchLeads(),
       fetchPricing(),
+      fetchCommissions(),
     ]);
   }
 
@@ -368,11 +429,45 @@ class AppStateProvider extends ChangeNotifier {
     notifyListeners();
     try {
       final result = await _pricingService.getAllPricing();
-      if (result.isNotEmpty) _pricings = result;
+      print('DEBUG: fetchPricing result: ${result.length} items fetched');
+      if (result.isNotEmpty) {
+        for (var p in result) {
+          int idx = _pricings.indexWhere((existing) => existing.tier == p.tier);
+          if (idx != -1) {
+            _pricings[idx] = p;
+          } else {
+            _pricings.add(p);
+          }
+        }
+      }
+      print('DEBUG: _pricings is now ${_pricings.map((e) => e.tier.name + ":" + e.price.toString()).toList()}');
     } catch (e) {
-      // Use defaults if backend is not seeded yet
+      print('DEBUG ERROR: fetchPricing failed: $e');
     } finally {
       _isLoadingPricing = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> fetchCommissions() async {
+    _isLoadingCommissions = true;
+    notifyListeners();
+    try {
+      final result = await _commissionService.getAllCommissions();
+      if (result.isNotEmpty) {
+        for (var c in result) {
+          int idx = _commissions.indexWhere((existing) => existing.serviceType == c.serviceType);
+          if (idx != -1) {
+            _commissions[idx] = c;
+          } else {
+            _commissions.add(c);
+          }
+        }
+      }
+    } catch (e) {
+      print('DEBUG ERROR: fetchCommissions failed: $e');
+    } finally {
+      _isLoadingCommissions = false;
       notifyListeners();
     }
   }
@@ -473,15 +568,18 @@ class AppStateProvider extends ChangeNotifier {
     }
   }
 
-  void updateCommission(String service, double direct, double indirect) {
-    int idx = _commissions.indexWhere((c) => c.serviceType == service);
-    if (idx != -1) {
-      _commissions[idx] = CommissionConfig(
-        serviceType: service,
-        directRate: direct,
-        indirectRate: indirect,
-      );
-      addNotification('Admin configured commission for $service: Direct ${(direct * 100).toStringAsFixed(1)}%, Indirect ${(indirect * 100).toStringAsFixed(1)}%');
+  Future<void> updateCommission(String service, double silver, double gold, double diamond, double platinum) async {
+    try {
+      await _commissionService.updateCommission(service, {
+        'silverRate': silver,
+        'goldRate': gold,
+        'diamondRate': diamond,
+        'platinumRate': platinum,
+      });
+      await fetchCommissions();
+      addNotification('Admin configured commission for $service: Silver ₹${silver.toStringAsFixed(0)}, Gold ₹${gold.toStringAsFixed(0)}, Diamond ₹${diamond.toStringAsFixed(0)}, Platinum ₹${platinum.toStringAsFixed(0)}');
+    } catch (e) {
+      _error = e.toString();
       notifyListeners();
     }
   }
@@ -632,20 +730,14 @@ class AppStateProvider extends ChangeNotifier {
     if (shouldPayCommission) {
       CommissionConfig commission = _commissions.firstWhere(
         (c) => c.serviceType == lead.serviceType,
-        orElse: () => CommissionConfig(serviceType: lead.serviceType, directRate: 0.05, indirectRate: 0.01),
+        orElse: () => CommissionConfig(serviceType: lead.serviceType, silverRate: 400.0, goldRate: 700.0, diamondRate: 900.0, platinumRate: 1000.0),
       );
-
-      double leadValue = 15000.0;
-      if (lead.serviceType == 'IT Projects') leadValue = 75000.0;
-      if (lead.serviceType == 'BPO Services') leadValue = 50000.0;
-      if (lead.serviceType == 'Loan') leadValue = 20000.0;
-
-      double directPayout = leadValue * commission.directRate;
-      double indirectPayout = leadValue * commission.indirectRate;
 
       int agentIdx = _agents.indexWhere((a) => a.agentCode == lead.agentCode);
       if (agentIdx != -1) {
         final ag = _agents[agentIdx];
+        double directPayout = getTierRate(commission, ag.membership);
+
         final updatedAgent = ag.copyWith(
           walletBalance: ag.walletBalance + directPayout,
           totalEarnings: ag.totalEarnings + directPayout,
@@ -669,35 +761,9 @@ class AppStateProvider extends ChangeNotifier {
           description: 'Direct Comm. for approved lead #${lead.id} (${lead.customerName ?? "Customer"})',
           date: DateTime.now(),
         ));
-
-        if (ag.referredBy != null && ag.referredBy!.isNotEmpty) {
-          int refIdx = _agents.indexWhere((a) => a.agentCode == ag.referredBy);
-          if (refIdx != -1) {
-            final refAg = _agents[refIdx];
-            final updatedRefAg = refAg.copyWith(
-              walletBalance: refAg.walletBalance + indirectPayout,
-              totalEarnings: refAg.totalEarnings + indirectPayout,
-            );
-            _agents[refIdx] = updatedRefAg;
-            try {
-              await _agentService.updateAgent(refAg.id, {
-                'walletBalance': updatedRefAg.walletBalance,
-                'totalEarnings': updatedRefAg.totalEarnings,
-              });
-            } catch (_) {}
-            _transactions.insert(0, TransactionModel(
-              id: 'tx_${Random().nextInt(1000000)}',
-              agentCode: refAg.agentCode,
-              amount: indirectPayout,
-              type: TransactionType.IndirectCommission,
-              status: TransactionStatus.Success,
-              description: 'L2 Comm. from referred agent ${ag.agentCode} for lead #${lead.id}',
-              date: DateTime.now(),
-            ));
-          }
-        }
       }
-      addNotification('Lead approved: Direct commission of ₹${directPayout.toStringAsFixed(0)} paid to ${lead.agentCode}');
+      double displayPayout = agentIdx != -1 ? getTierRate(commission, _agents[agentIdx].membership) : 0.0;
+      addNotification('Lead approved: Direct commission of ₹${displayPayout.toStringAsFixed(0)} paid to ${lead.agentCode}');
     } else if (newStatus == LeadStatus.Rejected) {
       addNotification('Lead rejected for ${lead.customerName ?? "Customer"}: $reason');
     }
@@ -844,6 +910,40 @@ class AppStateProvider extends ChangeNotifier {
           description: 'Membership Upgrade to ${tier.name} via Razorpay',
           date: DateTime.now(),
         ));
+        
+        // Award Plan Upgrade Commission to Referrer
+        if (agent.referredBy != null && agent.referredBy!.isNotEmpty) {
+          CommissionConfig upgradeConfig = _commissions.firstWhere(
+            (c) => c.serviceType == 'Plan Upgrade',
+            orElse: () => CommissionConfig(serviceType: 'Plan Upgrade', silverRate: 500.0, goldRate: 800.0, diamondRate: 1000.0, platinumRate: 1200.0),
+          );
+          int refIdx = _agents.indexWhere((a) => a.agentCode == agent.referredBy);
+          if (refIdx != -1) {
+            final refAg = _agents[refIdx];
+            final payout = getTierRate(upgradeConfig, refAg.membership);
+            final updatedRefAg = refAg.copyWith(
+              walletBalance: refAg.walletBalance + payout,
+              totalEarnings: refAg.totalEarnings + payout,
+            );
+            _agents[refIdx] = updatedRefAg;
+            try {
+              await _agentService.updateAgent(refAg.id, {
+                'walletBalance': updatedRefAg.walletBalance,
+                'totalEarnings': updatedRefAg.totalEarnings,
+              });
+            } catch (_) {}
+            _transactions.insert(0, TransactionModel(
+              id: 'tx_${Random().nextInt(1000000)}',
+              agentCode: refAg.agentCode,
+              amount: payout,
+              type: TransactionType.DirectCommission,
+              status: TransactionStatus.Success,
+              description: 'Commission for Agent ${agent.agentCode} Plan Upgrade (${tier.name})',
+              date: DateTime.now(),
+            ));
+          }
+        }
+
         addNotification('Agent ${agent.agentCode} upgraded membership to ${tier.name}!');
         notifyListeners();
       } catch (e) {

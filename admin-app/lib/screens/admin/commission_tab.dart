@@ -17,10 +17,14 @@ class AdminCommissionTab extends StatelessWidget {
       itemBuilder: (context, idx) {
         final comm = state.commissions[idx];
 
-        final TextEditingController directController =
-            TextEditingController(text: (comm.directRate * 100).toStringAsFixed(1));
-        final TextEditingController indirectController =
-            TextEditingController(text: (comm.indirectRate * 100).toStringAsFixed(1));
+        final TextEditingController silverController =
+            TextEditingController(text: comm.silverRate.toStringAsFixed(0));
+        final TextEditingController goldController =
+            TextEditingController(text: comm.goldRate.toStringAsFixed(0));
+        final TextEditingController diamondController =
+            TextEditingController(text: comm.diamondRate.toStringAsFixed(0));
+        final TextEditingController platinumController =
+            TextEditingController(text: comm.platinumRate.toStringAsFixed(0));
 
         return GlassCard(
           padding: const EdgeInsets.all(18),
@@ -72,17 +76,21 @@ class AdminCommissionTab extends StatelessWidget {
                       ),
                     ),
                     onPressed: () {
-                      final double? directVal = double.tryParse(directController.text);
-                      final double? indirectVal = double.tryParse(indirectController.text);
-                      if (directVal != null && indirectVal != null) {
+                      final double? silverVal = double.tryParse(silverController.text);
+                      final double? goldVal = double.tryParse(goldController.text);
+                      final double? diamondVal = double.tryParse(diamondController.text);
+                      final double? platinumVal = double.tryParse(platinumController.text);
+                      if (silverVal != null && goldVal != null && diamondVal != null && platinumVal != null) {
                         state.updateCommission(
                           comm.serviceType,
-                          directVal / 100.0,
-                          indirectVal / 100.0,
+                          silverVal,
+                          goldVal,
+                          diamondVal,
+                          platinumVal,
                         );
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('${comm.serviceType} Commission Configured!'),
+                          SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), 
+                            content: Text('${comm.serviceType} Commissions Configured!'),
                             backgroundColor: Colors.green,
                           ),
                         );
@@ -100,15 +108,15 @@ class AdminCommissionTab extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Direct (Level 1) Rate (%)',
+                          'Silver (₹)',
                           style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: const Color(0xFFFFC107)),
                         ),
                         const SizedBox(height: 6),
                         TextField(
-                          controller: directController,
+                          controller: silverController,
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           decoration: InputDecoration(
-                            suffixText: '%',
+                            prefixText: '₹ ',
                             isDense: true,
                             contentPadding: const EdgeInsets.all(10),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -124,15 +132,67 @@ class AdminCommissionTab extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const Text(
-                          'Indirect (Level 2) Rate (%)',
+                          'Gold (₹)',
                           style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: const Color(0xFFFFC107)),
                         ),
                         const SizedBox(height: 6),
                         TextField(
-                          controller: indirectController,
+                          controller: goldController,
                           keyboardType: const TextInputType.numberWithOptions(decimal: true),
                           decoration: InputDecoration(
-                            suffixText: '%',
+                            prefixText: '₹ ',
+                            isDense: true,
+                            contentPadding: const EdgeInsets.all(10),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Diamond (₹)',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: const Color(0xFFFFC107)),
+                        ),
+                        const SizedBox(height: 6),
+                        TextField(
+                          controller: diamondController,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          decoration: InputDecoration(
+                            prefixText: '₹ ',
+                            isDense: true,
+                            contentPadding: const EdgeInsets.all(10),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Platinum (₹)',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: const Color(0xFFFFC107)),
+                        ),
+                        const SizedBox(height: 6),
+                        TextField(
+                          controller: platinumController,
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          decoration: InputDecoration(
+                            prefixText: '₹ ',
                             isDense: true,
                             contentPadding: const EdgeInsets.all(10),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),

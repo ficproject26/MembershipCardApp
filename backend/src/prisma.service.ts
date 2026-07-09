@@ -51,7 +51,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleInit() {
-    // No-op for SQLite adapter
+    await this.client.$connect();
   }
 
   async onModuleDestroy() {

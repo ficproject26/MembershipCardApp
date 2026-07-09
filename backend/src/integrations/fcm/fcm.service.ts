@@ -1,15 +1,16 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import * as admin from 'firebase-admin';
+import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getMessaging, Message, MulticastMessage } from 'firebase-admin/messaging';
 
 @Injectable()
 export class FcmService implements OnModuleInit {
   private readonly logger = new Logger(FcmService.name);
 
   onModuleInit() {
-    if (admin.apps.length === 0) {
+    if (getApps().length === 0) {
       try {
-        admin.initializeApp({
-          credential: admin.credential.cert({
+        initializeApp({
+          credential: cert({
             projectId: process.env.FIREBASE_PROJECT_ID,
             clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
             privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
@@ -24,7 +25,7 @@ export class FcmService implements OnModuleInit {
 
   async sendToDevice(token: string, title: string, body: string, data?: Record<string, string>): Promise<boolean> {
     try {
-      const message: admin.messaging.Message = {
+      const message: Message = {
         token,
         notification: { title, body },
         data: data || {},
@@ -37,7 +38,7 @@ export class FcmService implements OnModuleInit {
         },
       };
 
-      const response = await admin.messaging().send(message);
+      const response = await getMessaging().send(message);
       this.logger.log(`Notification sent successfully: ${response}`);
       return true;
     } catch (error) {
@@ -56,7 +57,7 @@ export class FcmService implements OnModuleInit {
 
     const invalidTokens: string[] = [];
 
-    const message: admin.messaging.MulticastMessage = {
+    const message: MulticastMessage = {
       tokens,
       notification: { title, body },
       data: data || {},
@@ -70,7 +71,7 @@ export class FcmService implements OnModuleInit {
     };
 
     try {
-      const response = await admin.messaging().sendEachForMulticast(message);
+      const response = await getMessaging().sendEachForMulticast(message);
       this.logger.log(`Sent ${response.successCount}/${tokens.length} notifications`);
 
       response.responses.forEach((resp, idx) => {
@@ -91,7 +92,7 @@ export class FcmService implements OnModuleInit {
 
   async sendToTopic(topic: string, title: string, body: string, data?: Record<string, string>): Promise<void> {
     try {
-      await admin.messaging().send({
+      await getMessaging().send({
         topic,
         notification: { title, body },
         data: data || {},

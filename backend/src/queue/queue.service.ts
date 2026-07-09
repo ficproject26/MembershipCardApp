@@ -31,5 +31,17 @@ export class QueueService {
       this.logger.error(`Failed to add password reset email job: ${error.message}`);
     }
   }
+
+  async sendWelcomeEmail(to: string, name: string) {
+    try {
+      await this.emailQueue.add('welcome', { to, name }, {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 1000 },
+      });
+      this.logger.log(`Added welcome email job for ${to}`);
+    } catch (error) {
+      this.logger.error(`Failed to add welcome email job: ${error.message}`);
+    }
+  }
 }
 

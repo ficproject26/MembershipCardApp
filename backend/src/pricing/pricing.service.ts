@@ -32,13 +32,13 @@ export class PricingService {
     return pricing;
   }
 
-  async findOne(id: number) {
+  async findOne(id: string) {
     return this.prisma.membershipPricing.findUnique({
       where: { id },
     });
   }
 
-  async update(id: number, updatePricingDto: any) {
+  async update(id: string, updatePricingDto: any) {
     const updated = await this.prisma.membershipPricing.update({
       where: { id },
       data: updatePricingDto,
@@ -48,7 +48,7 @@ export class PricingService {
     return updated;
   }
 
-  async remove(id: number) {
+  async remove(id: string) {
     const removed = await this.prisma.membershipPricing.delete({
       where: { id },
     });

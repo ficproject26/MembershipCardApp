@@ -19,16 +19,16 @@ export class PricingController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.pricingService.findOne(+id);
+    return this.pricingService.findOne(id);
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updatePricingDto: UpdatePricingDto) {
-    return this.pricingService.update(+id, updatePricingDto);
+    return this.pricingService.update(id, updatePricingDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.pricingService.remove(+id);
+    return this.pricingService.remove(id);
   }
 }

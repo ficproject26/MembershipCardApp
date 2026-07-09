@@ -7,7 +7,7 @@ import 'package:dio/dio.dart';
 
 class ChatProvider with ChangeNotifier {
   IO.Socket? _socket;
-  final String _serverUrl = 'http://10.0.2.2:3001'; 
+  String get _serverUrl => ApiClient.instance.options.baseUrl;
   
   String? _currentUserId;
   String? _currentUserRole;
@@ -81,6 +81,10 @@ class ChatProvider with ChangeNotifier {
   void sendMessage(String receiverId, String receiverRole, String content, {String type = 'TEXT'}) {
     if (_socket == null || _currentUserId == null) return;
     
+    if (!_socket!.connected) {
+      _socket!.connect();
+    }
+
     _socket!.emit('sendMessage', {
       'senderId': _currentUserId,
       'senderType': _currentUserRole,

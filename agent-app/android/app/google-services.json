@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "206534749173",
+    "project_id": "editgo-3aaa3",
+    "storage_bucket": "editgo-3aaa3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:206534749173:android:8889d2ee320412d9facebc",
+        "android_client_info": {
+          "package_name": "com.example.admin_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDbCWnNCBug29GMT4tohW8C7fFepfHYm2Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:206534749173:android:9b0b7989ca2b10e5facebc",
+        "android_client_info": {
+          "package_name": "com.example.agent_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDbCWnNCBug29GMT4tohW8C7fFepfHYm2Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

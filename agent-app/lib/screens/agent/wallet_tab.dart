@@ -78,7 +78,7 @@ class AgentWalletTab extends StatelessWidget {
                   onPressed: () {
                     if (agent.kycStatus != KycStatus.Approved) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
+                        SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), 
                           content: Text('Payout requires an APPROVED KYC status. Please submit KYC first.'),
                           backgroundColor: Colors.redAccent,
                         ),
@@ -87,7 +87,7 @@ class AgentWalletTab extends StatelessWidget {
                     }
                     if (agent.walletBalance <= 0) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
+                        SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), 
                           content: Text('Wallet balance is 0. Cannot withdraw.'),
                           backgroundColor: Colors.redAccent,
                         ),
@@ -302,15 +302,13 @@ class AgentWalletTab extends StatelessWidget {
               onPressed: () {
                 final double? amount = double.tryParse(controller.text);
                 if (amount == null || amount <= 0 || amount > maxBalance) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Invalid withdrawal amount entered.')),
-                  );
+                  showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Invalid withdrawal amount entered.'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
                   return;
                 }
                 state.requestWithdrawal(amount);
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
+                  SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), 
                     content: Text('Payout request submitted for approval!'),
                     backgroundColor: Colors.green,
                   ),
@@ -483,13 +481,13 @@ class AgentWalletTab extends StatelessWidget {
 
                     if (aadhaar.length != 12) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Error: Aadhaar Number must be exactly 12 digits.'), backgroundColor: Colors.red),
+                        SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), content: Text('Error: Aadhaar Number must be exactly 12 digits.'), backgroundColor: Colors.red),
                       );
                       return;
                     }
                     if (pan.length != 10) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Error: PAN Card Number must be exactly 10 characters.'), backgroundColor: Colors.red),
+                        SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), content: Text('Error: PAN Card Number must be exactly 10 characters.'), backgroundColor: Colors.red),
                       );
                       return;
                     }
@@ -498,33 +496,33 @@ class AgentWalletTab extends StatelessWidget {
                     final panRegex = RegExp(r'^[A-Z]{5}[0-9]{4}[A-Z]{1}$');
                     if (!panRegex.hasMatch(pan)) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Error: Invalid PAN format (e.g. ABCDE1234F).'), backgroundColor: Colors.red),
+                        SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), content: Text('Error: Invalid PAN format (e.g. ABCDE1234F).'), backgroundColor: Colors.red),
                       );
                       return;
                     }
 
                     if (bankAcc.length < 9) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Error: Bank Account Number is too short.'), backgroundColor: Colors.red),
+                        SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), content: Text('Error: Bank Account Number is too short.'), backgroundColor: Colors.red),
                       );
                       return;
                     }
                     if (ifsc.length != 11) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Error: IFSC Code must be exactly 11 characters.'), backgroundColor: Colors.red),
+                        SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), content: Text('Error: IFSC Code must be exactly 11 characters.'), backgroundColor: Colors.red),
                       );
                       return;
                     }
                     if (bankName.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Error: Please enter your Full Name as per Bank.'), backgroundColor: Colors.red),
+                        SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), content: Text('Error: Please enter your Full Name as per Bank.'), backgroundColor: Colors.red),
                       );
                       return;
                     }
 
                     if (!isPhotoUploaded) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Error: Please upload an ID photo for verification.'), backgroundColor: Colors.red),
+                        SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), content: Text('Error: Please upload an ID photo for verification.'), backgroundColor: Colors.red),
                       );
                       return;
                     }
@@ -540,7 +538,7 @@ class AgentWalletTab extends StatelessWidget {
 
                     Navigator.pop(ctx);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
+                      SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), 
                         content: Text('KYC Submitted! Approval is now in the admin queue.'),
                         backgroundColor: Colors.green,
                       ),

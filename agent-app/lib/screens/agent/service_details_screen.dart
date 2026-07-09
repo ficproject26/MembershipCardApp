@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:shared/shared.dart';
 import 'services_tab.dart'; // To get ServiceItem
 import 'package:file_picker/file_picker.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class ServiceDetailsScreen extends StatefulWidget {
   final ServiceItem service;
@@ -263,9 +265,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A3B6E)),
               onPressed: () {
                 if (panController.text.trim().isEmpty || pincodeController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please fill out PAN and Pincode')),
-                  );
+                  showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Please fill out PAN and Pincode'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
                   return;
                 }
 
@@ -280,7 +280,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
 
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
+                  SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), 
                     content: Text('Stage 1 Submitted Successfully! Awaiting TL Approval.'),
                     backgroundColor: Colors.green,
                   ),
@@ -346,9 +346,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A3B6E)),
               onPressed: () {
                 if (nameController.text.trim().isEmpty || mobileController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please fill out all required fields')),
-                  );
+                  showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Please fill out all required fields'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
                   return;
                 }
 
@@ -370,7 +368,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
 
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
+                  SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), 
                     content: Text('Stage 2 Submitted Successfully! Awaiting final TL Approval.'),
                     backgroundColor: Colors.green,
                   ),
@@ -417,9 +415,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A3B6E)),
               onPressed: () {
                 if (messageController.text.trim().isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please paste the bank message.')),
-                  );
+                  showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Please paste the bank message.'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
                   return;
                 }
 
@@ -427,7 +423,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
 
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
+                  SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), 
                     content: Text('Stage 3 Submitted! Awaiting Final Approval.'),
                     backgroundColor: Colors.green,
                   ),
@@ -451,6 +447,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
     final phoneController = TextEditingController();
     final emailController = TextEditingController();
     String? selectedResume;
+    String? uploadedResumeUrl;
 
     // Specific controllers based on service
     final Map<String, TextEditingController> controllers = {};
@@ -459,7 +456,6 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
     String dropdownLabel = '';
 
     if (service.title == 'Loan') {
-      controllers['Loan Amount'] = TextEditingController();
       dropdownLabel = 'Type of Loan';
       dropdownOptions = ['Personal Loan', 'Home Loan', 'Business Loan', 'Car Loan', 'Gold Loan'];
       dropdownValue = dropdownOptions.first;
@@ -470,14 +466,11 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
       dropdownOptions = ['Term Life Insurance', 'Health Insurance', 'Motor Insurance', 'Corporate Health'];
       dropdownValue = dropdownOptions.first;
     } else if (service.title == 'IT Projects') {
-      controllers['Company Name'] = TextEditingController();
       dropdownLabel = 'Project Type';
       dropdownOptions = ['Web Application', 'Mobile App', 'Cloud Infrastructure', 'UI/UX Design', 'Custom Software'];
       dropdownValue = dropdownOptions.first;
     } else if (service.title == 'BPO Services') {
-      controllers['Company Name'] = TextEditingController();
       controllers['Agents Required'] = TextEditingController();
-      controllers['Contract Duration (Months)'] = TextEditingController();
       dropdownLabel = 'Service Type';
       dropdownOptions = ['Inbound Customer Support', 'Outbound Sales', 'Tech Support', 'Data Entry', 'Back Office'];
       dropdownValue = dropdownOptions.first;
@@ -504,14 +497,12 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                       decoration: const InputDecoration(labelText: 'Customer Full Name', isDense: true),
                     ),
                     const SizedBox(height: 10),
-                    if (service.title != 'Jobs') ...[
-                      TextField(
-                        controller: phoneController,
-                        keyboardType: TextInputType.phone,
-                        decoration: const InputDecoration(labelText: 'Customer Contact Number', isDense: true),
-                      ),
-                      const SizedBox(height: 10),
-                    ],
+                    TextField(
+                      controller: phoneController,
+                      keyboardType: TextInputType.phone,
+                      decoration: const InputDecoration(labelText: 'Customer Contact Number', isDense: true),
+                    ),
+                    const SizedBox(height: 10),
                     if (dropdownOptions.isNotEmpty) ...[
                       DropdownButtonFormField<String>(
                         value: dropdownValue,
@@ -534,10 +525,47 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                                 type: FileType.custom,
                                 allowedExtensions: ['pdf', 'doc', 'docx'],
                               );
-                              if (result != null && result.files.single.name != null) {
-                                setState(() {
-                                  selectedResume = result.files.single.name;
+                              if (result != null) {
+                                final file = result.files.single;
+                                final fileName = file.name;
+                                MultipartFile multipartFile;
+                                if (kIsWeb) {
+                                  multipartFile = MultipartFile.fromBytes(file.bytes!, filename: fileName);
+                                } else {
+                                  multipartFile = await MultipartFile.fromFile(file.path!, filename: fileName);
+                                }
+                                final formData = FormData.fromMap({
+                                  'file': multipartFile,
                                 });
+                                showDialog(
+                                  context: context,
+                                  barrierDismissible: false,
+                                  builder: (context) => const Center(child: CircularProgressIndicator()),
+                                );
+                                try {
+                                  final response = await ApiClient.instance.post('/chat/media', data: formData);
+                                  final uploadedUrl = response.data['mediaUrl'];
+                                  Navigator.pop(context); // Close loading indicator
+                                  setState(() {
+                                    selectedResume = fileName;
+                                    uploadedResumeUrl = uploadedUrl;
+                                  });
+                                } catch (e) {
+                                  Navigator.pop(context); // Close loading indicator
+                                  showDialog(
+                                    context: context,
+                                    builder: (context) => AlertDialog(
+                                      title: const Text('Error'),
+                                      content: Text('Failed to upload file: $e'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Navigator.pop(context),
+                                          child: const Text('OK'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }
                               }
                             },
                             icon: const Icon(Icons.upload_file, size: 18),
@@ -566,14 +594,6 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                               ),
                             ),
                           ),
-                          if (service.title == 'Loan' && entry.key == 'Loan Amount') ...[
-                            TextField(
-                              controller: emailController,
-                              keyboardType: TextInputType.emailAddress,
-                              decoration: const InputDecoration(labelText: 'Customer Email Address', isDense: true),
-                            ),
-                            const SizedBox(height: 10),
-                          ],
                         ],
                       );
                     }).toList(),
@@ -588,16 +608,12 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A3B6E)),
                   onPressed: () {
-                    if (nameController.text.trim().isEmpty || (service.title != 'Jobs' && phoneController.text.trim().isEmpty)) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Please fill out required fields')),
-                      );
+                    if (nameController.text.trim().isEmpty || phoneController.text.trim().isEmpty) {
+                      showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Please fill out required fields'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
                       return;
                     }
                     if (service.title == 'Jobs' && selectedResume == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Please upload a resume')),
-                      );
+                      showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Please upload a resume'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
                       return;
                     }
 
@@ -610,12 +626,13 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                     });
                     if (service.title == 'Jobs') {
                       finalDetails['Resume'] = selectedResume ?? '';
+                      finalDetails['ResumeUrl'] = uploadedResumeUrl ?? '';
                     }
 
                     state.submitLead(
                       customerName: nameController.text.trim(),
                       customerPhone: phoneController.text.trim(),
-                      customerEmail: service.title == 'Loan' ? emailController.text.trim() : null,
+                      customerEmail: null,
                       serviceType: service.title,
                       details: finalDetails,
                       status: LeadStatus.Pending,
@@ -623,7 +640,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
 
                     Navigator.pop(ctx);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
+                      SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), 
                         content: Text('${service.title} Lead Submitted Successfully!'),
                         backgroundColor: Colors.green,
                       ),

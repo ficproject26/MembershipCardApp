@@ -87,8 +87,10 @@ model MembershipPricing {
 model CommissionConfig {
   id           String @id @default(auto()) @map("_id") @db.ObjectId
   serviceType  String @unique
-  directRate   Float
-  indirectRate Float
+  silverRate   Float  @default(0.0)
+  goldRate     Float  @default(0.0)
+  diamondRate  Float  @default(0.0)
+  platinumRate Float  @default(0.0)
 }
 
 model Staff {

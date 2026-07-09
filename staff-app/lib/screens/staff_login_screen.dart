@@ -76,7 +76,7 @@ class _StaffLoginScreenState extends State<StaffLoginScreen> {
           Navigator.push(context, MaterialPageRoute(builder: (_) => const StaffShell()));
         }
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Welcome back, ${staff.name}!'), backgroundColor: Colors.green),
+          SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), content: Text('Welcome back, ${staff.name}!'), backgroundColor: Colors.green),
         );
         return;
       } else {

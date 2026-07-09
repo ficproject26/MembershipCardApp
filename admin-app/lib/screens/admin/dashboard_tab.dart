@@ -220,7 +220,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                         if (_notificationController.text.trim().isNotEmpty) {
                           state.addNotification(_notificationController.text.trim());
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
+                            SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), 
                               content: Text('Firebase Notification Broadcasted Successfully!'),
                               backgroundColor: Colors.green,
                             ),

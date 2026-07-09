@@ -6,17 +6,31 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared/shared.dart';
 import 'screens/agent_login_screen.dart';
 
+import 'firebase_options.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   // Initialize Firebase
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   
   // Set up background message handler
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   
-  // Initialize notification service
-  await NotificationService().initialize();
+  // Initialize notification service in the background so it doesn't block UI rendering
+  // Wrapped in try-catch to prevent black screen on emulators without Play Services
+  try {
+    NotificationService().initialize();
+  } catch (e) {
+    debugPrint('Notification init failed (safe to ignore on emulator): $e');
+  }
+  
+  // Prevent Google Fonts from blocking the main thread with network requests.
+  // This avoids the black screen / 110 skipped frames on startup.
+  // Fonts will use system fallback unless bundled as assets.
+  // GoogleFonts.config.allowRuntimeFetching = false;
   
   runApp(
     MultiProvider(

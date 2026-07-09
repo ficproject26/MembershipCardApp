@@ -257,7 +257,7 @@ class _ITManagerProjectsTabState extends State<ITManagerProjectsTab> with Single
       ),
       onPressed: () {
         Provider.of<AppStateProvider>(context, listen: false).verifyLead(lead.id, nextStatus);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Project updated to $label')));
+        showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Project updated to $label'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
       },
       child: Text(label),
     );

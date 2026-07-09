@@ -354,9 +354,7 @@ class _KycTeamDashboardOverviewState extends State<KycTeamDashboardOverview> {
     } else {
       await Clipboard.setData(ClipboardData(text: body));
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not launch email client. Link copied to clipboard!')),
-        );
+        showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Could not launch email client. Link copied to clipboard!'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
       }
     }
   }
@@ -371,9 +369,7 @@ class _KycTeamDashboardOverviewState extends State<KycTeamDashboardOverview> {
     } else {
       await Clipboard.setData(ClipboardData(text: text));
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not launch WhatsApp. KYC text copied to clipboard!')),
-        );
+        showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Could not launch WhatsApp. KYC text copied to clipboard!'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
       }
     }
   }
@@ -438,9 +434,7 @@ class _KycTeamDashboardOverviewState extends State<KycTeamDashboardOverview> {
                       if (token != null) {
                         setDialogState(() {});
                         if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('KYC Link generated successfully!')),
-                          );
+                          showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('KYC Link generated successfully!'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
                         }
                       }
                     },

@@ -25,18 +25,25 @@ async function main() {
   }
 
   const commissions = [
-    { serviceType: 'Credit Card', directRate: 0.12, indirectRate: 0.03 },
-    { serviceType: 'Loan', directRate: 0.10, indirectRate: 0.02 },
-    { serviceType: 'Jobs', directRate: 0.08, indirectRate: 0.015 },
-    { serviceType: 'Insurance', directRate: 0.15, indirectRate: 0.04 },
-    { serviceType: 'IT Projects', directRate: 0.20, indirectRate: 0.05 },
-    { serviceType: 'BPO Services', directRate: 0.18, indirectRate: 0.045 },
+    { serviceType: 'Credit Card', silverRate: 1000.0, goldRate: 1500.0, diamondRate: 1800.0, platinumRate: 2000.0 },
+    { serviceType: 'Loan', silverRate: 1200.0, goldRate: 1800.0, diamondRate: 2200.0, platinumRate: 2500.0 },
+    { serviceType: 'Jobs', silverRate: 400.0, goldRate: 700.0, diamondRate: 900.0, platinumRate: 1000.0 },
+    { serviceType: 'Insurance', silverRate: 1500.0, goldRate: 2200.0, diamondRate: 2700.0, platinumRate: 3000.0 },
+    { serviceType: 'IT Projects', silverRate: 3000.0, goldRate: 4500.0, diamondRate: 5500.0, platinumRate: 6000.0 },
+    { serviceType: 'BPO Services', silverRate: 2500.0, goldRate: 3500.0, diamondRate: 4500.0, platinumRate: 5000.0 },
+    { serviceType: 'App Referral', silverRate: 300.0, goldRate: 500.0, diamondRate: 600.0, platinumRate: 700.0 },
+    { serviceType: 'Plan Upgrade', silverRate: 500.0, goldRate: 800.0, diamondRate: 1000.0, platinumRate: 1200.0 },
   ];
 
   for (const c of commissions) {
     await (prisma as any).commissionConfig.upsert({
       where: { serviceType: c.serviceType },
-      update: { directRate: c.directRate, indirectRate: c.indirectRate },
+      update: {
+        silverRate: c.silverRate,
+        goldRate: c.goldRate,
+        diamondRate: c.diamondRate,
+        platinumRate: c.platinumRate,
+      },
       create: c,
     });
   }

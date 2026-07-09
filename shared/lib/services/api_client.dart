@@ -1,16 +1,20 @@
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 
 class ApiClient {
   // Set to true for production, false for local development
-  static const bool _isProduction = true;
+  static const bool _isProduction = false;
 
   static const String _productionUrl = 'https://membershipcardapp.onrender.com';
-  static const String _devUrl = kIsWeb ? 'http://localhost:3001' : 'http://10.0.2.2:3001';
+  
+  static String get _devUrl {
+    // If you are using an Android EMULATOR, change this back to 'http://10.0.2.2:3001'
+    return 'http://localhost:3001';
+  }
 
-  static const String _baseUrl = _isProduction ? _productionUrl : _devUrl;
+  static String get _baseUrl => _isProduction ? _productionUrl : _devUrl;
 
   static final Dio _dio = Dio(
     BaseOptions(

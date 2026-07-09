@@ -391,9 +391,7 @@ class _KycTeamDocumentsTabState extends State<KycTeamDocumentsTab> {
                           _uploadedDocs = [];
                         });
                         if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('KYC Verified successfully!')),
-                          );
+                          showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('KYC Verified successfully!'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
                         }
                       },
                       style: ElevatedButton.styleFrom(
@@ -416,9 +414,7 @@ class _KycTeamDocumentsTabState extends State<KycTeamDocumentsTab> {
                             _uploadedDocs = [];
                           });
                           if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('KYC Rejected.')),
-                            );
+                            showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('KYC Rejected.'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
                           }
                         }
                       },

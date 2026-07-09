@@ -125,7 +125,7 @@ class AgentShareTab extends StatelessWidget {
                       onPressed: () {
                         Clipboard.setData(ClipboardData(text: referralLink));
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
+                          SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), 
                             content: Text('Referral link copied to clipboard!'),
                             backgroundColor: Colors.green,
                           ),
@@ -148,9 +148,7 @@ class AgentShareTab extends StatelessWidget {
                         if (await canLaunchUrl(uri)) {
                           await launchUrl(uri, mode: LaunchMode.externalApplication);
                         } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Could not launch email client.')),
-                          );
+                          showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Could not launch email client.'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
                         }
                       },
                       child: const Icon(Icons.email, color: Colors.white, size: 18),

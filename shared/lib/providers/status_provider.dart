@@ -40,9 +40,13 @@ class StatusUpdate {
 class StatusProvider extends ChangeNotifier {
   List<StatusUpdate> _statuses = [];
   bool _isLoading = false;
+  bool _isUploading = false;
+  File? _uploadingFile;
 
   List<StatusUpdate> get statuses => _statuses;
   bool get isLoading => _isLoading;
+  bool get isUploading => _isUploading;
+  File? get uploadingFile => _uploadingFile;
 
   StatusUpdate? getStatusForUser(String userId) {
     try {
@@ -88,6 +92,10 @@ class StatusProvider extends ChangeNotifier {
   }
 
   Future<bool> postMediaStatus(String userId, String userName, String type, File file, {String? content}) async {
+    _isUploading = true;
+    _uploadingFile = file;
+    notifyListeners();
+
     try {
       String fileName = file.path.split('/').last;
       
@@ -106,6 +114,10 @@ class StatusProvider extends ChangeNotifier {
       }
     } catch (e) {
       print('Error posting media status: $e');
+    } finally {
+      _isUploading = false;
+      _uploadingFile = null;
+      notifyListeners();
     }
     return false;
   }

@@ -1067,7 +1067,7 @@ class _AgentDashboardTabState extends State<AgentDashboardTab>
               decoration: BoxDecoration(
                 gradient: unlocked
                     ? const LinearGradient(
-                        colors: [Color(0xFF1A3B6E), Color(0xFF2A5298)],
+                        colors: [Color(0xFF1A1F2E), Color(0xFF232A3B)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       )

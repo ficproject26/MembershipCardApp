@@ -112,7 +112,7 @@ class ITProjectRequestCard extends StatelessWidget {
                     }),
                     _buildActionButton(Icons.check_circle_outline, 'Approve', Colors.green, () {
                       Provider.of<AppStateProvider>(context, listen: false).verifyLead(lead.id, LeadStatus.Stage1Approved);
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Project moved to Requirements (Projects Tab)')));
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), content: Text('Project moved to Requirements (Projects Tab)')));
                     }),
                     _buildActionButton(Icons.cancel_outlined, 'Reject', Colors.red, () {
                       Provider.of<AppStateProvider>(context, listen: false).verifyLead(lead.id, LeadStatus.Rejected);

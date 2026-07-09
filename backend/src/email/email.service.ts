@@ -65,4 +65,28 @@ export class EmailService {
       this.logger.error(`Failed to send password reset email to ${to}`, error.stack);
     }
   }
+
+  async sendWelcomeEmail(to: string, name: string): Promise<void> {
+    const mailOptions = {
+      from: `"Membership App" <${process.env.EMAIL_USER}>`,
+      to,
+      subject: 'Registration Successful - Welcome to FIC Membership Club!',
+      html: `
+        <h2>Registration Successful!</h2>
+        <p>Hi ${name},</p>
+        <p>Welcome to the FIC Membership Club. Your registration has been successful.</p>
+        <p>We are thrilled to have you with us!</p>
+        <br/>
+        <p>Best Regards,</p>
+        <p>FIC Membership Team</p>
+      `,
+    };
+
+    try {
+      await this.transporter.sendMail(mailOptions);
+      this.logger.log(`Welcome email sent to ${to}`);
+    } catch (error) {
+      this.logger.error(`Failed to send welcome email to ${to}`, error.stack);
+    }
+  }
 }

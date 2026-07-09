@@ -66,7 +66,8 @@ export class AgentService {
 
       this.logger.log(`Agent created successfully: ${createdAgent.id}`);
 
-      // Send verification email asynchronously via BullMQ
+      // Send welcome and verification emails asynchronously via BullMQ
+      this.queueService.sendWelcomeEmail(createdAgent.email, createdAgent.fullName || 'Member');
       this.queueService.sendVerificationEmail(createdAgent.email, verificationToken);
 
       return {

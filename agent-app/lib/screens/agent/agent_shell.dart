@@ -130,28 +130,33 @@ class _AgentShellState extends State<AgentShell> {
                     ),
                   ),
                   // Notification bell
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1A1F2E),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Stack(
-                      children: [
-                        const Icon(Icons.notifications_outlined, color: Colors.white60, size: 20),
-                        Positioned(
-                          right: 0,
-                          top: 0,
-                          child: Container(
-                            width: 7,
-                            height: 7,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFFACC15),
-                              shape: BoxShape.circle,
+                  GestureDetector(
+                    onTap: () {
+                      showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('No new notifications'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1A1F2E),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Stack(
+                        children: [
+                          const Icon(Icons.notifications_outlined, color: Colors.white60, size: 20),
+                          Positioned(
+                            right: 0,
+                            top: 0,
+                            child: Container(
+                              width: 7,
+                              height: 7,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFFACC15),
+                                shape: BoxShape.circle,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),

@@ -17,7 +17,7 @@ class PricingService {
     }
   }
 
-  Future<MembershipPricing> updatePricing(int id, Map<String, dynamic> data) async {
+  Future<MembershipPricing> updatePricing(String id, Map<String, dynamic> data) async {
     try {
       final response = await _dio.patch('/pricing/$id', data: data);
       return MembershipPricing.fromJson(response.data);

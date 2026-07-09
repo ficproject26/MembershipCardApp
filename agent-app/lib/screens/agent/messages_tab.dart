@@ -142,9 +142,7 @@ class _AgentMessagesTabState extends State<AgentMessagesTab> {
               GestureDetector(
                 behavior: HitTestBehavior.opaque,
                 onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Add Status feature coming soon!'), backgroundColor: Color(0xFF1A3B6E)),
-                  );
+                  showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Add Status feature coming soon!'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
                 },
                 child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 6),

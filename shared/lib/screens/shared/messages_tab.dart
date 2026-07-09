@@ -11,7 +11,9 @@ import '../../models/staff_model.dart';
 import '../../models/message_model.dart';
 import 'new_chat_screen.dart';
 import 'video_player_widget.dart';
+import 'full_screen_viewer.dart';
 import 'story_viewer_widget.dart';
+import 'status_upload_screen.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:geolocator/geolocator.dart';
@@ -100,7 +102,7 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
 
     // Add agents as contacts (for admin/staff, show top agents)
     if (widget.currentUserRole == 'Admin' || widget.currentUserRole == 'Staff' || widget.currentUserRole == 'Project Manager') {
-      for (int i = 0; i < state.agents.length && i < 10; i++) {
+      for (int i = 0; i < state.agents.length; i++) {
         final agent = state.agents[i];
         final msg = chat.getLastMessageFor(agent.id);
 
@@ -223,6 +225,7 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
   @override
   Widget build(BuildContext context) {
     final state = Provider.of<AppStateProvider>(context);
+    final isDark = state.isDarkMode;
     final chat = Provider.of<ChatProvider>(context);
     final contacts = _buildContacts(state, chat);
 
@@ -280,17 +283,17 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            color: const Color(0xFF0C1017),
+            color: isDark ? const Color(0xFF0C1017) : const Color(0xFFF8F9FC),
             border: Border(
-              bottom: BorderSide(color: Colors.white.withOpacity(0.06)),
+              bottom: BorderSide(color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06)),
             ),
           ),
           child: Row(
             children: [
-              const Text(
+              Text(
                 'Messages',
                 style: TextStyle(
-                  color: Colors.white,
+                  color: isDark ? Colors.white : const Color(0xFF1A3B6E),
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
                 ),
@@ -317,18 +320,16 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.06),
+                    color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.search, color: Colors.white54, size: 20),
+                  child: Icon(Icons.search, color: isDark ? Colors.white54 : Colors.black54, size: 20),
                 ),
               ),
               const SizedBox(width: 8),
               GestureDetector(
                 onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Broadcast message feature coming soon!'), backgroundColor: Color(0xFF1A3B6E)),
-                  );
+                  showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Broadcast message feature coming soon!'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
                 },
                 child: Container(
                   padding: const EdgeInsets.all(8),
@@ -346,17 +347,17 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
         // Search bar
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          color: const Color(0xFF0C1017),
+          color: isDark ? const Color(0xFF0C1017) : const Color(0xFFF8F9FC),
           child: TextField(
             controller: _searchController,
-            style: const TextStyle(color: Colors.white, fontSize: 14),
+            style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 14),
             onChanged: (val) => setState(() => _searchQuery = val),
             decoration: InputDecoration(
               hintText: 'Search contacts...',
-              hintStyle: const TextStyle(color: Colors.white30, fontSize: 13),
-              prefixIcon: const Icon(Icons.search, color: Colors.white30, size: 18),
+              hintStyle: TextStyle(color: isDark ? Colors.white30 : Colors.black38, fontSize: 13),
+              prefixIcon: Icon(Icons.search, color: isDark ? Colors.white30 : Colors.black38, size: 18),
               filled: true,
-              fillColor: Colors.white.withOpacity(0.05),
+              fillColor: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
               contentPadding: const EdgeInsets.symmetric(vertical: 10),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -416,12 +417,35 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
                                     color: Colors.white.withOpacity(0.05),
                                     border: myStatuses.isEmpty ? Border.all(color: Colors.white.withOpacity(0.1), width: 1.5) : null,
                                   ),
-                                  child: const Icon(Icons.person, color: Colors.white54, size: 22),
+                                  child: statusProvider.isUploading && statusProvider.uploadingFile != null
+                                      ? ClipOval(
+                                          child: (kIsWeb 
+                                              ? Image.network(statusProvider.uploadingFile!.path, fit: BoxFit.cover, width: 50, height: 50)
+                                              : Image.file(statusProvider.uploadingFile!, fit: BoxFit.cover, width: 50, height: 50)),
+                                        )
+                                      : const Icon(Icons.person, color: Colors.white54, size: 22),
                                 ),
                               ),
                             ),
                           ),
-                          Positioned(
+                          if (statusProvider.isUploading)
+                            Positioned.fill(
+                              child: const CircularProgressIndicator(
+                                color: Color(0xFFFFC107),
+                                strokeWidth: 2.5,
+                              ),
+                            ),
+                          if (statusProvider.isUploading)
+                            Positioned.fill(
+                              child: GestureDetector(
+                                onTap: () {
+                                  // In future: cancel upload token
+                                },
+                                child: const Icon(Icons.close, color: Colors.white, size: 16),
+                              ),
+                            ),
+                          if (!statusProvider.isUploading)
+                            Positioned(
                             right: 0,
                             bottom: 0,
                             child: GestureDetector(
@@ -702,7 +726,17 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
                 final ImagePicker picker = ImagePicker();
                 final XFile? image = await picker.pickImage(source: ImageSource.gallery);
                 if (image != null && mounted) {
-                  _showUploadMediaDialog(context, File(image.path), 'IMAGE');
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => StatusUploadScreen(
+                        file: File(image.path),
+                        type: 'IMAGE',
+                        currentUserId: widget.currentUserId,
+                        currentUserName: widget.currentUserName,
+                      ),
+                    ),
+                  );
                 }
               },
             ),
@@ -714,78 +748,22 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
                 final ImagePicker picker = ImagePicker();
                 final XFile? video = await picker.pickVideo(source: ImageSource.gallery);
                 if (video != null && mounted) {
-                  _showUploadMediaDialog(context, File(video.path), 'VIDEO');
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => StatusUploadScreen(
+                        file: File(video.path),
+                        type: 'VIDEO',
+                        currentUserId: widget.currentUserId,
+                        currentUserName: widget.currentUserName,
+                      ),
+                    ),
+                  );
                 }
               },
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _showUploadMediaDialog(BuildContext context, File file, String type) {
-    final TextEditingController textController = TextEditingController();
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1D24),
-        title: Text('Upload $type', style: const TextStyle(color: Colors.white)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            type == 'IMAGE' 
-              ? (kIsWeb 
-                  ? Image.network(file.path, height: 150, fit: BoxFit.cover)
-                  : Image.file(file, height: 150, fit: BoxFit.cover))
-              : SizedBox(height: 150, child: VideoPlayerWidget(file: file)),
-            const SizedBox(height: 16),
-            TextField(
-              controller: textController,
-              style: const TextStyle(color: Colors.white),
-              maxLength: 100,
-              decoration: const InputDecoration(
-                hintText: 'Add a caption...',
-                hintStyle: TextStyle(color: Colors.white38),
-                enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Colors.white38)),
-                focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFFFFC107))),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFC107)),
-            onPressed: () async {
-              // Show loading indicator
-              showDialog(
-                context: ctx,
-                barrierDismissible: false,
-                builder: (c) => const Center(child: CircularProgressIndicator(color: Color(0xFFFFC107))),
-              );
-              final success = await Provider.of<StatusProvider>(context, listen: false).postMediaStatus(
-                widget.currentUserId,
-                widget.currentUserName,
-                type,
-                file,
-                content: textController.text.trim(),
-              );
-              Navigator.pop(ctx); // pop loading
-              Navigator.pop(ctx); // pop dialog
-              if (success && mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Status updated!'), backgroundColor: Color(0xFF10B981)),
-                );
-              }
-            },
-            child: const Text('Post', style: TextStyle(color: Colors.black)),
-          ),
-        ],
       ),
     );
   }
@@ -824,9 +802,7 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
                 );
                 Navigator.pop(ctx);
                 if (success && mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Status updated!'), backgroundColor: Color(0xFF10B981)),
-                  );
+                  showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Status updated!'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
                 }
               }
             },
@@ -997,25 +973,19 @@ class _ChatScreenState extends State<_ChatScreen> {
           IconButton(
             icon: const Icon(Icons.videocam, color: Colors.white54),
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Video call coming soon!'), backgroundColor: Color(0xFF1A3B6E)),
-              );
+              showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Video call coming soon!'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
             },
           ),
           IconButton(
             icon: const Icon(Icons.call, color: Colors.white54),
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Voice call coming soon!'), backgroundColor: Color(0xFF1A3B6E)),
-              );
+              showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Voice call coming soon!'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
             },
           ),
           IconButton(
             icon: const Icon(Icons.more_vert, color: Colors.white54),
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('More options coming soon!'), backgroundColor: Color(0xFF1A3B6E)),
-              );
+              showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('More options coming soon!'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
             },
           ),
         ],
@@ -1032,7 +1002,10 @@ class _ChatScreenState extends State<_ChatScreen> {
               itemBuilder: (ctx, i) {
                 final msg = messages[i];
                 final isMe = msg.senderId != contact.id;
-                final time = '${msg.createdAt.hour}:${msg.createdAt.minute.toString().padLeft(2, '0')}';
+                final localTime = msg.createdAt.toLocal();
+                final hour = localTime.hour > 12 ? localTime.hour - 12 : (localTime.hour == 0 ? 12 : localTime.hour);
+                final amPm = localTime.hour >= 12 ? 'PM' : 'AM';
+                final time = '$hour:${localTime.minute.toString().padLeft(2, '0')} $amPm';
                 return _buildMessageBubble(msg, isMe, time, contact);
               },
             ),
@@ -1185,14 +1158,48 @@ class _ChatScreenState extends State<_ChatScreen> {
           crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
           children: [
             if (msg.type == 'IMAGE' && msg.mediaUrl != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: Image.network(
-                    '${ApiClient.instance.options.baseUrl}${msg.mediaUrl}',
-                    width: 200,
-                    fit: BoxFit.cover,
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => FullScreenViewer(
+                    url: '${ApiClient.instance.options.baseUrl}${msg.mediaUrl}',
+                    isVideo: false,
+                  )));
+                },
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.network(
+                      '${ApiClient.instance.options.baseUrl}${msg.mediaUrl}',
+                      width: 200,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+              )
+            else if (msg.type == 'VIDEO' && msg.mediaUrl != null)
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => FullScreenViewer(
+                    url: '${ApiClient.instance.options.baseUrl}${msg.mediaUrl}',
+                    isVideo: true,
+                  )));
+                },
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: SizedBox(
+                      width: 200,
+                      height: 200,
+                      // The VideoPlayerWidget already handles internal tap for play/pause,
+                      // so we use AbsorbPointer to prevent it from absorbing the tap
+                      child: AbsorbPointer(
+                        child: VideoPlayerWidget(
+                          url: '${ApiClient.instance.options.baseUrl}${msg.mediaUrl}',
+                        ),
+                      ),
+                    ),
                   ),
                 ),
               )
@@ -1299,11 +1306,25 @@ class _ChatScreenState extends State<_ChatScreen> {
     try {
       if (action == 'Camera' || action == 'Gallery') {
         final picker = ImagePicker();
-        final XFile? image = await picker.pickImage(
-          source: action == 'Camera' ? ImageSource.camera : ImageSource.gallery,
-        );
-        if (image != null) {
-          provider.sendMediaMessage(widget.contact.id, role, File(image.path), 'IMAGE', '📷 Image');
+        XFile? mediaFile;
+        String type = 'IMAGE';
+        String msgContent = '📷 Image';
+
+        if (action == 'Gallery') {
+          mediaFile = await picker.pickMedia();
+          if (mediaFile != null) {
+            final ext = mediaFile.path.toLowerCase();
+            if (ext.endsWith('.mp4') || ext.endsWith('.mov') || ext.endsWith('.avi') || ext.endsWith('.mkv')) {
+              type = 'VIDEO';
+              msgContent = '🎥 Video';
+            }
+          }
+        } else {
+          mediaFile = await picker.pickImage(source: ImageSource.camera);
+        }
+
+        if (mediaFile != null) {
+          provider.sendMediaMessage(widget.contact.id, role, File(mediaFile.path), type, msgContent);
         }
       } else if (action == 'Document' || action == 'Audio') {
         final result = await FilePicker.platform.pickFiles(
@@ -1337,7 +1358,7 @@ class _ChatScreenState extends State<_ChatScreen> {
         }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error processing $action: $e')));
+      showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Error processing $action: $e'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
     }
   }
 }

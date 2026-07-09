@@ -252,7 +252,7 @@ class AgentServicesTab extends StatelessWidget {
           Navigator.pop(ctx);
           if (!context.mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
+            SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), 
               content: Text('Payment Successful! You are now a ${needed.name} Member!'),
               backgroundColor: Colors.green,
             ),

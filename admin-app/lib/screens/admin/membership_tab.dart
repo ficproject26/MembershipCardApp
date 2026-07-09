@@ -85,50 +85,63 @@ class AdminMembershipTab extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  Row(
-                    children: [
-                      SizedBox(
-                        width: 80,
-                        child: TextField(
-                          controller: priceController,
-                          keyboardType: TextInputType.number,
-                          decoration: const InputDecoration(
-                            prefixText: '₹',
-                            isDense: true,
-                            contentPadding: EdgeInsets.all(8),
-                            border: OutlineInputBorder(),
-                          ),
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                            color: isDark ? Colors.white : Colors.black87,
-                          ),
-                        ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(
+                    'Set Price:',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: isDark ? Colors.white70 : Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  SizedBox(
+                    width: 80,
+                    child: TextField(
+                      controller: priceController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        prefixText: '₹',
+                        isDense: true,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+                        border: OutlineInputBorder(),
                       ),
-                      const SizedBox(width: 6),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFFC107),
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        onPressed: () {
-                          final double? newPrice = double.tryParse(priceController.text);
-                          if (newPrice != null) {
-                            state.updatePricing(pricing.tier, newPrice);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('${pricing.tier.name} Price Updated Successfully!'),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
-                          }
-                        },
-                        child: const Text('Save', style: TextStyle(color: Colors.white, fontSize: 11)),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : Colors.black87,
                       ),
-                    ],
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFFFC107),
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    onPressed: () {
+                      final double? newPrice = double.tryParse(priceController.text);
+                      if (newPrice != null) {
+                        state.updatePricing(pricing.tier, newPrice);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            behavior: SnackBarBehavior.floating,
+                            width: 400,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            content: Text('${pricing.tier.name} Price Updated Successfully!'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      }
+                    },
+                    child: const Text('Save', style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
@@ -136,14 +149,17 @@ class AdminMembershipTab extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Enabled Platform Access & Features:',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: isDark ? Colors.white70 : const Color(0xFF1A3B6E),
+                  Expanded(
+                    child: Text(
+                      'Enabled Platform Access & Features:',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white70 : const Color(0xFF1A3B6E),
+                      ),
                     ),
                   ),
+                  const SizedBox(width: 8),
                   GestureDetector(
                     onTap: () {
                       _showAddBenefitDialog(context, state, pricing.tier);
@@ -256,7 +272,7 @@ class AdminMembershipTab extends StatelessWidget {
                   state.addBenefit(tier, text);
                   Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
+                    SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), 
                       content: Text('Added "$text" to ${tier.name} Plan!'),
                       backgroundColor: Colors.green,
                     ),
@@ -305,7 +321,7 @@ class AdminMembershipTab extends StatelessWidget {
                 state.deleteBenefit(tier, index);
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
+                  SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), 
                     content: Text('Deleted feature from ${tier.name} Plan.'),
                     backgroundColor: Colors.redAccent,
                   ),
@@ -328,7 +344,7 @@ class AdminMembershipTab extends StatelessWidget {
                   state.updateBenefit(tier, index, text);
                   Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
+                    SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), 
                       content: Text('Updated feature successfully!'),
                       backgroundColor: Colors.green,
                     ),

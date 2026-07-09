@@ -99,9 +99,7 @@ class TLLeadsTab extends StatelessWidget {
                                       buffer.writeln('Bank Message: ${lead.bankMessage}');
                                     }
                                     Clipboard.setData(ClipboardData(text: buffer.toString()));
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Lead details copied to clipboard!')),
-                                    );
+                                    showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Lead details copied to clipboard!'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
                                   },
                                   tooltip: 'Copy Details',
                                 ),

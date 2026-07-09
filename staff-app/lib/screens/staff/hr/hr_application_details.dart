@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared/shared.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HrApplicationDetails extends StatefulWidget {
   final String leadId;
@@ -34,18 +35,14 @@ class _HrApplicationDetailsState extends State<HrApplicationDetails> {
     try {
       await LeadService().updateLead(widget.leadId, {'status': status});
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Application marked as $status')),
-        );
+        showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Application marked as $status'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
         setState(() {
           _fetchData();
         });
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update: $e')),
-        );
+        showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Failed to update: $e'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
       }
     }
   }
@@ -104,7 +101,7 @@ class _HrApplicationDetailsState extends State<HrApplicationDetails> {
                 
                 const SizedBox(height: 32),
                 
-                if (lead.status == 'KYC_Pending')
+                if (lead.status != LeadStatus.Approved && lead.status != LeadStatus.Rejected)
                   _buildActionButtons(),
               ],
             ),
@@ -164,6 +161,68 @@ class _HrApplicationDetailsState extends State<HrApplicationDetails> {
               Expanded(child: _buildInfoItem('Agent Code', lead.agentCode ?? 'Direct', Icons.person_pin, textColor, textMuted)),
             ],
           ),
+          if (lead.details.containsKey('Resume') || lead.details.containsKey('ResumeUrl')) ...[
+            const Divider(height: 32),
+            Row(
+              children: [
+                Icon(Icons.description, size: 24, color: accentYellow),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Resume / CV', style: TextStyle(fontSize: 12, color: textMuted)),
+                      Text(
+                        lead.details['Resume'] ?? 'Resume File',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: textColor),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                if (lead.details['ResumeUrl'] != null && lead.details['ResumeUrl']!.toString().isNotEmpty)
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: accentYellow,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onPressed: () async {
+                      final rawUrl = lead.details['ResumeUrl']!;
+                      final fullUrl = rawUrl.startsWith('http')
+                          ? rawUrl
+                          : '${ApiClient.baseUrl}$rawUrl';
+                      final uri = Uri.parse(fullUrl);
+                      if (await canLaunchUrl(uri)) {
+                        await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      } else {
+                        if (context.mounted) {
+                          showDialog(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text('Error'),
+                              content: const Text('Could not open resume link.'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx),
+                                  child: const Text('OK'),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                      }
+                    },
+                    icon: const Icon(Icons.download_rounded, size: 18),
+                    label: const Text('Download', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                  ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -322,13 +381,13 @@ class _HrApplicationDetailsState extends State<HrApplicationDetails> {
       children: [
         Expanded(
           child: ElevatedButton(
-            onPressed: () => _updateStatus('KYC_Verified'),
+            onPressed: () => _updateStatus('Approved'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
-            child: const Text('Approve KYC', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+            child: const Text('Approve', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
           ),
         ),
         const SizedBox(width: 16),

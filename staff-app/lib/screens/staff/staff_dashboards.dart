@@ -315,9 +315,7 @@ class _HrDashboardState extends State<_HrDashboard> {
                                   onChanged: (newStatus) {
                                     if (newStatus != null) {
                                       state.verifyLead(lead.id, newStatus);
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(content: Text('Status updated to ${newStatus.name}')),
-                                      );
+                                      showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Status updated to ${newStatus.name}'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
                                     }
                                   },
                                 ),
@@ -617,9 +615,7 @@ class _KycDashboardState extends State<_KycDashboard> {
                               label: const Text('Reject KYC'),
                               onPressed: () {
                                 state.verifyKyc(agent.id, KycStatus.Rejected);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('KYC for ${agent.name} rejected.')),
-                                );
+                                showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('KYC for ${agent.name} rejected.'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
                               },
                             ),
                             const SizedBox(width: 12),
@@ -633,9 +629,7 @@ class _KycDashboardState extends State<_KycDashboard> {
                               label: const Text('Approve KYC'),
                               onPressed: () {
                                 state.verifyKyc(agent.id, KycStatus.Approved);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('KYC for ${agent.name} approved!')),
-                                );
+                                showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('KYC for ${agent.name} approved!'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
                               },
                             ),
                           ],
@@ -909,9 +903,7 @@ class _TlLeadsDashboardState extends State<_TlLeadsDashboard> {
                                   buffer.writeln('${e.key}: ${e.value}');
                                 }
                                 Clipboard.setData(ClipboardData(text: buffer.toString()));
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Lead details copied to clipboard!')),
-                                );
+                                showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Lead details copied to clipboard!'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
                               },
                               tooltip: 'Copy Details',
                             ),
@@ -972,9 +964,7 @@ class _TlLeadsDashboardState extends State<_TlLeadsDashboard> {
                             OutlinedButton.icon(
                               onPressed: () {
                                 state.verifyLead(lead.id, LeadStatus.Rejected, reason: 'Rejected by TL');
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Lead ${lead.id} rejected.')),
-                                );
+                                showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Lead ${lead.id} rejected.'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
                               },
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: Colors.redAccent,
@@ -1006,9 +996,7 @@ class _TlLeadsDashboardState extends State<_TlLeadsDashboard> {
                                 }
                                 
                                 state.verifyLead(lead.id, nextStatus);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Lead ${lead.id}: $msg!')),
-                                );
+                                showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Lead ${lead.id}: $msg!'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.green,

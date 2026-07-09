@@ -152,8 +152,10 @@ class AdminLeadsTab extends StatelessWidget {
               ),
               if (isPending) ...[
                 const SizedBox(height: 14),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                Wrap(
+                  alignment: WrapAlignment.end,
+                  spacing: 12,
+                  runSpacing: 12,
                   children: [
                     OutlinedButton(
                       style: OutlinedButton.styleFrom(
@@ -165,7 +167,6 @@ class AdminLeadsTab extends StatelessWidget {
                       },
                       child: const Text('Reject Lead'),
                     ),
-                    const SizedBox(width: 12),
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.green,
@@ -173,13 +174,13 @@ class AdminLeadsTab extends StatelessWidget {
                       onPressed: () {
                         state.verifyLead(lead.id, LeadStatus.Approved);
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
+                          SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), 
                             content: Text('Lead Approved & Commission Paid!'),
                             backgroundColor: Colors.green,
                           ),
                         );
                       },
-                      child: const Text('Approve & Pay Commission', style: TextStyle(color: Colors.white)),
+                      child: const Text('Approve & Pay', style: TextStyle(color: Colors.white)),
                     ),
                   ],
                 ),
