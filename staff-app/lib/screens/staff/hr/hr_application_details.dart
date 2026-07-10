@@ -31,11 +31,11 @@ class _HrApplicationDetailsState extends State<HrApplicationDetails> {
     _docsFuture = LeadService().getKycDocuments(widget.leadId);
   }
 
-  Future<void> _updateStatus(String status) async {
+  Future<void> _updateStatus(AppStateProvider state, LeadStatus status) async {
     try {
-      await LeadService().updateLead(widget.leadId, {'status': status});
+      await state.verifyLead(widget.leadId, status);
       if (mounted) {
-        showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Application marked as $status'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
+        showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Application marked as ${status.name}'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
         setState(() {
           _fetchData();
         });
@@ -102,7 +102,7 @@ class _HrApplicationDetailsState extends State<HrApplicationDetails> {
                 const SizedBox(height: 32),
                 
                 if (lead.status != LeadStatus.Approved && lead.status != LeadStatus.Rejected)
-                  _buildActionButtons(),
+                  _buildActionButtons(state),
               ],
             ),
           );
@@ -376,12 +376,12 @@ class _HrApplicationDetailsState extends State<HrApplicationDetails> {
     );
   }
 
-  Widget _buildActionButtons() {
+  Widget _buildActionButtons(AppStateProvider state) {
     return Row(
       children: [
         Expanded(
           child: ElevatedButton(
-            onPressed: () => _updateStatus('Approved'),
+            onPressed: () => _updateStatus(state, LeadStatus.Approved),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -393,7 +393,7 @@ class _HrApplicationDetailsState extends State<HrApplicationDetails> {
         const SizedBox(width: 16),
         Expanded(
           child: OutlinedButton(
-            onPressed: () => _updateStatus('Rejected'),
+            onPressed: () => _updateStatus(state, LeadStatus.Rejected),
             style: OutlinedButton.styleFrom(
               foregroundColor: Colors.red,
               side: const BorderSide(color: Colors.red),

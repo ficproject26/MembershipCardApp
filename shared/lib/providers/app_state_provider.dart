@@ -378,13 +378,25 @@ class AppStateProvider extends ChangeNotifier {
   // ─── Data Fetching ────────────────────────────────────────────────────────
 
   Future<void> fetchAllData() async {
-    await Future.wait([
-      fetchAgents(),
-      fetchStaff(),
-      fetchLeads(),
+    List<Future> tasks = [
       fetchPricing(),
       fetchCommissions(),
-    ]);
+    ];
+
+    if (_currentAgentId != null) {
+      tasks.add(fetchAgentLeads(_currentAgentId!));
+    } else if (_currentStaffId != null) {
+      tasks.add(fetchAgents());
+      tasks.add(fetchStaff());
+      tasks.add(fetchLeads());
+    } else {
+      // Default (not logged in)
+      tasks.add(fetchAgents());
+      tasks.add(fetchStaff());
+      tasks.add(fetchLeads());
+    }
+
+    await Future.wait(tasks);
   }
 
   Future<void> fetchAgents() async {
