@@ -14,7 +14,8 @@ class ApiClient {
     return 'http://localhost:3001';
   }
 
-  static String get _baseUrl => _isProduction ? _productionUrl : _devUrl;
+  static String get baseUrl => _isProduction ? _productionUrl : _devUrl;
+  static String get _baseUrl => baseUrl;
 
   static final Dio _dio = Dio(
     BaseOptions(
