@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:socket_io_client/socket_io_client.dart' as IO;
 import '../models/user_model.dart';
 import '../models/lead_model.dart';
 import '../models/transaction_model.dart';
@@ -14,6 +15,7 @@ import '../services/pricing_service.dart';
 import '../services/staff_service.dart';
 import '../services/notification_service.dart';
 import '../services/commission_service.dart';
+import '../services/api_client.dart';
 
 class AppStateProvider extends ChangeNotifier {
   // Services
@@ -22,6 +24,8 @@ class AppStateProvider extends ChangeNotifier {
   final PricingService _pricingService = PricingService();
   final StaffService _staffService = StaffService();
   final CommissionService _commissionService = CommissionService();
+  
+  IO.Socket? _systemSocket;
 
   // Theme State
   bool _isDarkMode = true;
@@ -199,9 +203,37 @@ class AppStateProvider extends ChangeNotifier {
   Map<String, String> get eligibleNotes => _eligibleNotes;
 
   AppStateProvider() {
+    _initSystemSocket();
     Future.microtask(() {
       fetchAllData();
     });
+  }
+
+  void _initSystemSocket() {
+    try {
+      final serverUrl = ApiClient.instance.options.baseUrl;
+      _systemSocket = IO.io(serverUrl, IO.OptionBuilder()
+          .setTransports(['websocket'])
+          .disableAutoConnect()
+          .build());
+
+      _systemSocket?.connect();
+
+      _systemSocket?.onConnect((_) {
+        debugPrint('Connected to System Socket for auto-refresh');
+      });
+
+      _systemSocket?.on('system_data_changed', (data) {
+        debugPrint('System data changed: $data');
+        fetchAllData(); // Auto-refresh all data!
+      });
+
+      _systemSocket?.onDisconnect((_) {
+        debugPrint('Disconnected from System Socket');
+      });
+    } catch (e) {
+      debugPrint('Error initializing system socket: $e');
+    }
   }
 
   Future<AgentModel?> registerAgent({
