@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, Tar
 
 class ApiClient {
   // Set to true for production, false for local development
-  static const bool _isProduction = false;
+  static const bool _isProduction = true;
 
   static const String _productionUrl = 'https://membershipcardapp.onrender.com';
   
