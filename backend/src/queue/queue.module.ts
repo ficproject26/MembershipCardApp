@@ -9,6 +9,7 @@ import { EmailModule } from '../email/email.module';
     BullModule.forRoot({
       connection: {
         url: process.env.REDIS_URL,
+        tls: process.env.REDIS_URL?.startsWith('rediss://') ? { rejectUnauthorized: false } : undefined,
       },
     }),
     BullModule.registerQueue({
