@@ -15,7 +15,29 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
     if (!prismaInstance) {
       prismaInstance = new PrismaClient();
     }
-    this.client = prismaInstance;
+    
+    const gateway = this.systemGateway;
+    this.client = (prismaInstance as any).$extends({
+      query: {
+        $allModels: {
+          async $allOperations({ model, operation, args, query }: any) {
+            const result = await query(args);
+            const mutationActions = ['create', 'update', 'delete', 'upsert', 'createMany', 'updateMany', 'deleteMany'];
+            
+            if (mutationActions.includes(operation)) {
+              if (model !== 'Message') {
+                try {
+                  gateway.broadcastDataChanged(model, operation);
+                } catch (e) {
+                  console.error('Failed to broadcast data change:', e);
+                }
+              }
+            }
+            return result;
+          }
+        }
+      }
+    }) as any;
   }
 
   get agent() {
@@ -55,25 +77,7 @@ export class PrismaService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleInit() {
-    await this.client.$connect();
-
-    // Broadcast changes to all connected websocket clients
-    (this.client as any).$use(async (params: any, next: any) => {
-      const result = await next(params);
-      const mutationActions = ['create', 'update', 'delete', 'upsert', 'createMany', 'updateMany', 'deleteMany'];
-      
-      if (mutationActions.includes(params.action)) {
-        // Exclude specific models from broadcasting if they are too noisy, e.g., Message
-        if (params.model !== 'Message') {
-          try {
-            this.systemGateway.broadcastDataChanged(params.model, params.action);
-          } catch (e) {
-            console.error('Failed to broadcast data change:', e);
-          }
-        }
-      }
-      return result;
-    });
+    await (this.client as any).$connect();
   }
 
   async onModuleDestroy() {
