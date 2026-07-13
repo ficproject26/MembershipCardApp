@@ -2,8 +2,6 @@ library shared;
 
 import 'package:flutter/material.dart';
 
-final GlobalKey<NavigatorState> sharedNavigatorKey = GlobalKey<NavigatorState>();
-
 // Models
 export 'models/config_model.dart';
 export 'models/lead_model.dart';
@@ -41,3 +39,5 @@ export 'screens/shared/story_viewer_widget.dart';
 export 'screens/shared/video_player_widget.dart';
 export 'screens/shared/call_screen.dart';
 export 'screens/shared/incoming_call_overlay.dart';
+
+final GlobalKey<NavigatorState> sharedNavigatorKey = GlobalKey<NavigatorState>();
