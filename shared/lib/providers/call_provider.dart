@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:http/http.dart' as http;
@@ -130,6 +130,9 @@ class CallProvider extends ChangeNotifier {
         case 'call-accept':
           debugPrint("CallProvider: Processing call-accept. Current state: $_callState");
           if (_callState == CallState.outgoing) {
+            // Immediately update state so UI shows Connected
+            _callState = CallState.inCall;
+            notifyListeners();
             await _startAgora();
           }
           break;
@@ -205,6 +208,12 @@ class CallProvider extends ChangeNotifier {
   }
 
   Future<void> _startAgora() async {
+    // Agora RTC Engine does NOT support web/Chrome
+    if (kIsWeb) {
+      debugPrint("CallProvider: Agora not supported on Web. Skipping RTC join.");
+      return;
+    }
+
     try {
       _engine = createAgoraRtcEngine();
       await _engine!.initialize(const RtcEngineContext(
@@ -215,25 +224,28 @@ class CallProvider extends ChangeNotifier {
       _engine!.registerEventHandler(
         RtcEngineEventHandler(
           onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
-            debugPrint("local user ${connection.localUid} joined");
+            debugPrint("local user ${connection.localUid} joined Agora channel");
             _localUid = connection.localUid;
             notifyListeners();
           },
           onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) {
-            debugPrint("remote user $remoteUid joined");
+            debugPrint("remote user $remoteUid joined Agora channel");
             _remoteUid = remoteUid;
             _callState = CallState.inCall;
             notifyListeners();
           },
           onUserOffline: (RtcConnection connection, int remoteUid, UserOfflineReasonType reason) {
-            debugPrint("remote user $remoteUid left channel");
+            debugPrint("remote user $remoteUid left Agora channel");
             _remoteUid = null;
             _resetCall();
           },
           onLeaveChannel: (RtcConnection connection, RtcStats stats) {
-            debugPrint("left channel");
+            debugPrint("left Agora channel");
             _localUid = null;
             _remoteUid = null;
+          },
+          onError: (ErrorCodeType err, String msg) {
+            debugPrint("Agora error: $err - $msg");
           },
         ),
       );
@@ -243,12 +255,14 @@ class CallProvider extends ChangeNotifier {
         await _engine!.startPreview();
       } else {
         await _engine!.enableAudio();
+        await _engine!.setEnableSpeakerphone(true);
       }
 
       final token = await _fetchToken(_channelName!);
+      debugPrint("CallProvider: Joining Agora channel: $_channelName with token: ${token != null ? 'OK' : 'NULL'}");
 
       await _engine!.joinChannel(
-        token: token ?? "",
+        token: token ?? '',
         channelId: _channelName ?? 'default_channel',
         uid: 0,
         options: const ChannelMediaOptions(
@@ -258,7 +272,7 @@ class CallProvider extends ChangeNotifier {
         ),
       );
     } catch (e) {
-      debugPrint("Agora initialize error: $e");
+      debugPrint("Agora initialize/join error: $e");
     }
   }
 
