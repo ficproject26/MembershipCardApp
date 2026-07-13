@@ -3,7 +3,7 @@ import { RtcTokenBuilder, RtcRole } from 'agora-token';
 
 @Injectable()
 export class AgoraService {
-  generateRtcToken(channelName: string, uid: number, role: RtcRole = RtcRole.PUBLISHER): string {
+  generateRtcToken(channelName: string, uid: number, role: number = RtcRole.PUBLISHER): string {
     const appId = process.env.AGORA_APP_ID;
     const appCertificate = process.env.AGORA_APP_CERTIFICATE;
     const expirationTimeInSeconds = 3600;
