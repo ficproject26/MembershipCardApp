@@ -1,5 +1,9 @@
 library shared;
 
+import 'package:flutter/material.dart';
+
+final GlobalKey<NavigatorState> sharedNavigatorKey = GlobalKey<NavigatorState>();
+
 // Models
 export 'models/config_model.dart';
 export 'models/lead_model.dart';
@@ -23,6 +27,7 @@ export 'services/commission_service.dart';
 export 'providers/app_state_provider.dart';
 export 'providers/chat_provider.dart';
 export 'providers/status_provider.dart';
+export 'providers/call_provider.dart';
 
 // Widgets
 export 'widgets/advanced_hover_card.dart';
@@ -34,3 +39,5 @@ export 'screens/shared/messages_tab.dart';
 export 'screens/shared/new_chat_screen.dart';
 export 'screens/shared/story_viewer_widget.dart';
 export 'screens/shared/video_player_widget.dart';
+export 'screens/shared/call_screen.dart';
+export 'screens/shared/incoming_call_overlay.dart';

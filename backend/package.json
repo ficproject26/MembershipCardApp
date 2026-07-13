@@ -38,6 +38,8 @@
     "@sentry/nestjs": "^10.59.0",
     "@sentry/node": "^10.59.0",
     "@types/multer": "^2.1.0",
+    "agora-access-token": "^2.0.4",
+    "agora-token": "^2.0.5",
     "bcrypt": "^6.0.0",
     "bullmq": "^5.79.0",
     "firebase-admin": "^14.0.0",

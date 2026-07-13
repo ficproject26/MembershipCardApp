@@ -7,6 +7,7 @@ import 'package:dio/dio.dart';
 
 class ChatProvider with ChangeNotifier {
   IO.Socket? _socket;
+  IO.Socket? get socket => _socket;
   String get _serverUrl => ApiClient.instance.options.baseUrl;
   
   String? _currentUserId;

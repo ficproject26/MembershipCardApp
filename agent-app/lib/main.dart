@@ -38,6 +38,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => AppStateProvider()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => StatusProvider()),
+        ChangeNotifierProvider(create: (_) => CallProvider()),
       ],
       child: const MyApp(),
     ),
@@ -52,6 +53,7 @@ class MyApp extends StatelessWidget {
     final state = Provider.of<AppStateProvider>(context);
 
     return MaterialApp(
+      navigatorKey: sharedNavigatorKey,
       title: 'FIC Agent Portal',
       debugShowCheckedModeBanner: false,
       themeMode: state.isDarkMode ? ThemeMode.dark : ThemeMode.light,
@@ -83,7 +85,9 @@ class MyApp extends StatelessWidget {
         textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme),
         useMaterial3: true,
       ),
-      
+      builder: (context, child) {
+        return IncomingCallOverlay(child: child!);
+      },
       home: const AgentLoginScreen(),
     );
   }

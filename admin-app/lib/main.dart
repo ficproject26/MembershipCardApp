@@ -44,6 +44,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: sharedNavigatorKey,
       title: 'FIC Admin Portal',
       debugShowCheckedModeBanner: false,
       themeMode: ThemeMode.dark,

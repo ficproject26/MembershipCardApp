@@ -9,9 +9,13 @@ import 'screens/staff_login_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  await Firebase.initializeApp();
-  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-  await NotificationService().initialize();
+  try {
+    await Firebase.initializeApp();
+    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+    await NotificationService().initialize();
+  } catch (e) {
+    debugPrint('Firebase or Notification initialization failed: $e');
+  }
   
   runApp(
     MultiProvider(
@@ -19,6 +23,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => AppStateProvider()),
         ChangeNotifierProvider(create: (_) => ChatProvider()),
         ChangeNotifierProvider(create: (_) => StatusProvider()),
+        ChangeNotifierProvider(create: (_) => CallProvider()),
       ],
       child: const MyApp(),
     ),
@@ -33,6 +38,7 @@ class MyApp extends StatelessWidget {
     final state = Provider.of<AppStateProvider>(context);
 
     return MaterialApp(
+      navigatorKey: sharedNavigatorKey,
       title: 'FIC Staff Portal',
       debugShowCheckedModeBanner: false,
       themeMode: state.isDarkMode ? ThemeMode.dark : ThemeMode.light,
@@ -64,7 +70,9 @@ class MyApp extends StatelessWidget {
         textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme),
         useMaterial3: true,
       ),
-      
+      builder: (context, child) {
+        return IncomingCallOverlay(child: child!);
+      },
       home: const StaffLoginScreen(),
     );
   }

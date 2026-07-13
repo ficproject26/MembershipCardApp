@@ -18,6 +18,7 @@ import { EmailModule } from './email/email.module';
 import { RedisModule } from './redis/redis.module';
 import { NotificationModule } from './notification/notification.module';
 import { CommissionModule } from './commission/commission.module';
+import { AgoraModule } from './agora/agora.module';
 
 @Module({
   imports: [
@@ -25,7 +26,7 @@ import { CommissionModule } from './commission/commission.module';
       rootPath: join(process.cwd(), 'uploads'),
       serveRoot: '/uploads/',
     }),
-    PrismaModule, AgentModule, LeadModule, PricingModule, StaffModule, AuthModule, IntegrationsModule, QueueModule, ChatModule, StatusModule, KycUploadModule, EmailModule, RedisModule, NotificationModule, CommissionModule
+    PrismaModule, AgentModule, LeadModule, PricingModule, StaffModule, AuthModule, IntegrationsModule, QueueModule, ChatModule, StatusModule, KycUploadModule, EmailModule, RedisModule, NotificationModule, CommissionModule, AgoraModule
   ],
   controllers: [AppController],
   providers: [AppService],

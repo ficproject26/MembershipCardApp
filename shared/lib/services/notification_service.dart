@@ -7,10 +7,16 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:dio/dio.dart';
 import 'api_client.dart';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 /// Top-level function to handle background messages (must be top-level)
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
+  try {
+    await Firebase.initializeApp();
+  } catch (e) {
+    debugPrint('Background Firebase init failed: $e');
+  }
   debugPrint('Background notification: ${message.notification?.title}');
 }
 
@@ -19,7 +25,7 @@ class NotificationService {
   factory NotificationService() => _instance;
   NotificationService._();
 
-  final FirebaseMessaging _fcm = FirebaseMessaging.instance;
+  FirebaseMessaging get _fcm => FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
 
@@ -28,6 +34,10 @@ class NotificationService {
 
   /// Initialize notifications - call from main.dart after Firebase.initializeApp()
   Future<void> initialize() async {
+    if (kIsWeb) {
+      debugPrint('NotificationService: Web platform is not supported for local notifications.');
+      return;
+    }
     try {
       // Request permission
       final settings = await _fcm.requestPermission(
@@ -85,7 +95,7 @@ class NotificationService {
     );
 
     // Create notification channel for Android
-    if (Platform.isAndroid) {
+    if (!kIsWeb && Platform.isAndroid) {
       const channel = AndroidNotificationChannel(
         'fic_notifications',
         'FIC Notifications',
@@ -131,6 +141,7 @@ class NotificationService {
 
   /// Register the FCM token with the backend
   Future<void> registerToken(String userId, String userType) async {
+    if (kIsWeb) return;
     if (_fcmToken == null) return;
 
     try {

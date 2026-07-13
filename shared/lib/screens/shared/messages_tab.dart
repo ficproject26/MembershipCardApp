@@ -7,6 +7,8 @@ import 'package:video_player/video_player.dart';
 import '../../providers/app_state_provider.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/status_provider.dart';
+import '../../providers/call_provider.dart';
+import 'call_screen.dart';
 import '../../models/staff_model.dart';
 import '../../models/message_model.dart';
 import 'new_chat_screen.dart';
@@ -45,7 +47,19 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ChatProvider>().init(widget.currentUserId, widget.currentUserRole);
+      final chatProvider = context.read<ChatProvider>();
+      chatProvider.init(widget.currentUserId, widget.currentUserRole);
+      
+      // Initialize Call Provider using the shared socket
+      if (chatProvider.socket != null) {
+        context.read<CallProvider>().init(
+          socket: chatProvider.socket!,
+          currentUserId: widget.currentUserId,
+          currentUserName: widget.currentUserName,
+          currentUserType: widget.currentUserRole,
+        );
+      }
+      
       context.read<StatusProvider>().fetchStatuses();
     });
   }
@@ -973,13 +987,15 @@ class _ChatScreenState extends State<_ChatScreen> {
           IconButton(
             icon: const Icon(Icons.videocam, color: Colors.white54),
             onPressed: () {
-              showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Video call coming soon!'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
+              context.read<CallProvider>().initiateCall(contact.id, contact.name, true);
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const CallScreen()));
             },
           ),
           IconButton(
             icon: const Icon(Icons.call, color: Colors.white54),
             onPressed: () {
-              showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Voice call coming soon!'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
+              context.read<CallProvider>().initiateCall(contact.id, contact.name, false);
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const CallScreen()));
             },
           ),
           IconButton(

@@ -73,4 +73,20 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     return message;
   }
+
+  @SubscribeMessage('webrtc-signaling')
+  handleWebRTCSignaling(
+    @MessageBody() data: { to: string; type: string; payload?: any; callerId?: string; callerName?: string; callerType?: string; isVideo?: boolean },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const receiverSocketId = this.connectedUsers.get(data.to);
+    if (receiverSocketId) {
+      this.server.to(receiverSocketId).emit('webrtc-signaling', data);
+    } else {
+      // If receiver is offline and someone is calling them
+      if (data.type === 'call-initiate') {
+        client.emit('webrtc-signaling', { type: 'call-reject', reason: 'User offline' });
+      }
+    }
+  }
 }

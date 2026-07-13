@@ -19,20 +19,7 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
-subprojects {
-    val proj = this
-    if (proj.state.executed) {
-        proj.extensions.findByType<com.android.build.gradle.BaseExtension>()?.apply {
-            compileSdkVersion(36)
-        }
-    } else {
-        proj.afterEvaluate {
-            extensions.findByType<com.android.build.gradle.BaseExtension>()?.apply {
-                compileSdkVersion(36)
-            }
-        }
-    }
-}
+// Removed compileSdkVersion override block to fix AGP 8.7+ lifecycle issues
 
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
