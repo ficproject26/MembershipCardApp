@@ -50,10 +50,13 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
       final chatProvider = context.read<ChatProvider>();
       chatProvider.init(widget.currentUserId, widget.currentUserRole);
       
-      // Initialize Call Provider using the shared socket
-      if (chatProvider.socket != null) {
+      // Socket is created synchronously in chatProvider.init(),
+      // even though the connection is async. Pass it to CallProvider immediately.
+      // CallProvider will emit 'join' on connect (or immediately if already connected).
+      final socket = chatProvider.socket;
+      if (socket != null) {
         context.read<CallProvider>().init(
-          socket: chatProvider.socket!,
+          socket: socket,
           currentUserId: widget.currentUserId,
           currentUserName: widget.currentUserName,
           currentUserType: widget.currentUserRole,

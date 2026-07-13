@@ -20,6 +20,27 @@ class _StaffShellState extends State<StaffShell> {
   int _currentIndex = 0;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final state = context.read<AppStateProvider>();
+      final staff = state.currentStaff;
+      if (staff != null) {
+        final chatProvider = context.read<ChatProvider>();
+        chatProvider.init(staff.id, 'Staff');
+        if (chatProvider.socket != null) {
+          context.read<CallProvider>().init(
+            socket: chatProvider.socket!,
+            currentUserId: staff.id,
+            currentUserName: staff.name,
+            currentUserType: 'Staff',
+          );
+        }
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final state = Provider.of<AppStateProvider>(context);
     final isDark = state.isDarkMode;

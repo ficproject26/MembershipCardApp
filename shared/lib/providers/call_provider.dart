@@ -55,14 +55,29 @@ class CallProvider extends ChangeNotifier {
     required String currentUserName,
     required String currentUserType,
   }) {
-    if (_socket != null) return; // Already initialized
-    
-    _socket = socket;
+    // Update user info always
     _currentUserId = currentUserId;
     _currentUserName = currentUserName;
     _currentUserType = currentUserType;
-    
+
+    // If same socket, just ensure join is emitted (don't re-register listeners)
+    if (_socket == socket) {
+      _ensureJoined();
+      return;
+    }
+
+    // New socket — register listeners
+    _socket = socket;
     _listenToSignaling();
+  }
+
+  void _ensureJoined() {
+    if (_socket == null || _currentUserId == null) return;
+    if (_socket!.connected) {
+      debugPrint("CallProvider: _ensureJoined - socket already connected, emitting join for $_currentUserId");
+      _socket!.emit('join', {'userId': _currentUserId});
+    }
+    // If not connected yet, the onConnect handler in _listenToSignaling will emit join
   }
 
   @override
@@ -75,8 +90,16 @@ class CallProvider extends ChangeNotifier {
     debugPrint("CallProvider: _listenToSignaling started. Socket connected: ${_socket?.connected}");
     
     _socket!.onConnect((_) {
-      debugPrint("CallProvider Socket connected successfully");
+      debugPrint("CallProvider Socket connected - emitting join for $_currentUserId");
+      // Re-emit join so backend registers us for call routing
+      _socket!.emit('join', {'userId': _currentUserId});
     });
+    
+    // If socket is already connected when we init, emit join immediately
+    if (_socket!.connected) {
+      debugPrint("CallProvider: Socket already connected, emitting join immediately");
+      _socket!.emit('join', {'userId': _currentUserId});
+    }
     
     _socket!.onDisconnect((_) {
       debugPrint("CallProvider Socket disconnected");

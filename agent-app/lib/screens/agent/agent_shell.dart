@@ -17,7 +17,26 @@ class AgentShell extends StatefulWidget {
 class _AgentShellState extends State<AgentShell> {
   int _currentIndex = 0;
 
-
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final state = context.read<AppStateProvider>();
+      final agent = state.currentAgent;
+      if (agent != null) {
+        final chatProvider = context.read<ChatProvider>();
+        chatProvider.init(agent.id, 'Agent');
+        if (chatProvider.socket != null) {
+          context.read<CallProvider>().init(
+            socket: chatProvider.socket!,
+            currentUserId: agent.id,
+            currentUserName: agent.name,
+            currentUserType: 'Agent',
+          );
+        }
+      }
+    });
+  }
 
   void _navigateToTab(int index) {
     setState(() {

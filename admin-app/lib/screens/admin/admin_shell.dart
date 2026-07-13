@@ -21,6 +21,23 @@ class AdminShell extends StatefulWidget {
 class _AdminShellState extends State<AdminShell> {
   int _currentIndex = 0;
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final chatProvider = context.read<ChatProvider>();
+      chatProvider.init('admin', 'Admin');
+      if (chatProvider.socket != null) {
+        context.read<CallProvider>().init(
+          socket: chatProvider.socket!,
+          currentUserId: 'admin',
+          currentUserName: 'Admin',
+          currentUserType: 'Admin',
+        );
+      }
+    });
+  }
+
   final List<Widget> _tabs = [
     const AdminDashboardTab(),
     const AdminLeadsTab(),
