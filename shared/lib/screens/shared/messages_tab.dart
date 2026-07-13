@@ -967,21 +967,28 @@ class _ChatScreenState extends State<_ChatScreen> {
                 child: Icon(contact.icon, color: Colors.white, size: 18),
               ),
               const SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    contact.name,
-                    style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
-                  ),
-                  Text(
-                    contact.isOnline ? 'Online' : 'Last seen recently',
-                    style: TextStyle(
-                      color: contact.isOnline ? const Color(0xFF10B981) : Colors.white38,
-                      fontSize: 11,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      contact.name,
+                      style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                ],
+                    Text(
+                      contact.isOnline ? 'Online' : 'Last seen recently',
+                      style: TextStyle(
+                        color: contact.isOnline ? const Color(0xFF10B981) : Colors.white38,
+                        fontSize: 11,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

@@ -1,8 +1,10 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:http/http.dart' as http;
+import 'package:permission_handler/permission_handler.dart';
 
 enum CallState { idle, incoming, outgoing, inCall }
 
@@ -44,6 +46,38 @@ class CallProvider extends ChangeNotifier {
 
   bool _isCameraOff = false;
   bool get isCameraOff => _isCameraOff;
+
+  bool _isSpeakerOn = true;
+  bool get isSpeakerOn => _isSpeakerOn;
+
+  String? _errorMessage;
+  String? get errorMessage => _errorMessage;
+
+  Timer? _callTimer;
+  int _duration = 0;
+  int get duration => _duration;
+
+  String get formattedDuration {
+    final hours = (_duration ~/ 3600).toString().padLeft(2, '0');
+    final minutes = ((_duration % 3600) ~/ 60).toString().padLeft(2, '0');
+    final seconds = (_duration % 60).toString().padLeft(2, '0');
+    return '$hours:$minutes:$seconds';
+  }
+
+  void _startCallTimer() {
+    if (_callTimer != null) return; // Already running
+    _duration = 0;
+    _callTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      _duration++;
+      notifyListeners();
+    });
+  }
+
+  void _stopCallTimer() {
+    _callTimer?.cancel();
+    _callTimer = null;
+    _duration = 0;
+  }
 
   CallProvider() {
     // No-op constructor
@@ -132,6 +166,7 @@ class CallProvider extends ChangeNotifier {
           if (_callState == CallState.outgoing) {
             // Immediately update state so UI shows Connected
             _callState = CallState.inCall;
+            _startCallTimer();
             notifyListeners();
             await _startAgora();
           }
@@ -180,6 +215,7 @@ class CallProvider extends ChangeNotifier {
 
   Future<void> acceptCall() async {
     _callState = CallState.inCall;
+    _startCallTimer();
     notifyListeners();
     _emitSignaling('call-accept', null, null);
     await _startAgora();
@@ -195,9 +231,14 @@ class CallProvider extends ChangeNotifier {
     await _resetCall();
   }
 
-  Future<String?> _fetchToken(String channelName) async {
+  int _getUidFromString(String? id) {
+    if (id == null) return 0;
+    return id.hashCode & 0x7FFFFFFF; // Stable 31-bit positive integer
+  }
+
+  Future<String?> _fetchToken(String channelName, int uid) async {
     try {
-      final response = await http.get(Uri.parse('$_tokenServerUrl/agora/rtcToken?channelName=$channelName&uid=0'));
+      final response = await http.get(Uri.parse('$_tokenServerUrl/agora/rtcToken?channelName=$channelName&uid=$uid'));
       if (response.statusCode == 200) {
         return jsonDecode(response.body)['token'];
       }
@@ -215,6 +256,27 @@ class CallProvider extends ChangeNotifier {
     }
 
     try {
+      // 1. Request Microphone and Camera permissions at runtime
+      final List<Permission> permissions = [Permission.microphone];
+      if (_isVideo) {
+        permissions.add(Permission.camera);
+      }
+
+      // Request Bluetooth Connect permission on Android 12+ (API 31+) to prevent SecurityException during audio routing
+      if (defaultTargetPlatform == TargetPlatform.android) {
+        permissions.add(Permission.bluetoothConnect);
+      }
+      
+      final statuses = await permissions.request();
+      final micGranted = statuses[Permission.microphone] == PermissionStatus.granted;
+      final camGranted = !_isVideo || statuses[Permission.camera] == PermissionStatus.granted;
+      final btGranted = defaultTargetPlatform != TargetPlatform.android || 
+                         statuses[Permission.bluetoothConnect] == PermissionStatus.granted;
+      
+      if (!micGranted || !camGranted || !btGranted) {
+        debugPrint("CallProvider: Permissions not fully granted. Mic: $micGranted, Cam: $camGranted, BT: $btGranted");
+      }
+
       _engine = createAgoraRtcEngine();
       await _engine!.initialize(const RtcEngineContext(
         appId: _agoraAppId,
@@ -223,15 +285,30 @@ class CallProvider extends ChangeNotifier {
 
       _engine!.registerEventHandler(
         RtcEngineEventHandler(
-          onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
+          onJoinChannelSuccess: (RtcConnection connection, int elapsed) async {
             debugPrint("local user ${connection.localUid} joined Agora channel");
             _localUid = connection.localUid;
+            _errorMessage = null; // Clear error on join success
+            _startCallTimer(); // Ensure timer starts when we successfully join
+            
+            try {
+              // Safely configure volumes and audio routing now that the engine is ready
+              await _engine?.adjustRecordingSignalVolume(100);
+              await _engine?.adjustPlaybackSignalVolume(100);
+              if (!_isVideo) {
+                await _engine?.setEnableSpeakerphone(_isSpeakerOn);
+              }
+            } catch (e) {
+              debugPrint("Agora post-join setup error: $e");
+            }
+            
             notifyListeners();
           },
           onUserJoined: (RtcConnection connection, int remoteUid, int elapsed) {
             debugPrint("remote user $remoteUid joined Agora channel");
             _remoteUid = remoteUid;
             _callState = CallState.inCall;
+            _startCallTimer(); // Ensure timer starts when remote user joins
             notifyListeners();
           },
           onUserOffline: (RtcConnection connection, int remoteUid, UserOfflineReasonType reason) {
@@ -244,40 +321,59 @@ class CallProvider extends ChangeNotifier {
             _localUid = null;
             _remoteUid = null;
           },
+          onConnectionStateChanged: (RtcConnection connection, ConnectionStateType state, ConnectionChangedReasonType reason) {
+            debugPrint("Agora Connection state changed: $state, reason: $reason");
+            if (state == ConnectionStateType.connectionStateFailed) {
+              _errorMessage = "Connection failed: $reason";
+              notifyListeners();
+            }
+          },
           onError: (ErrorCodeType err, String msg) {
             debugPrint("Agora error: $err - $msg");
+            _errorMessage = "Agora Error: $err - $msg";
+            notifyListeners();
           },
         ),
       );
 
+      // Enable required media modules before joining
+      await _engine!.enableAudio();
+
       if (_isVideo) {
         await _engine!.enableVideo();
         await _engine!.startPreview();
-      } else {
-        await _engine!.enableAudio();
-        await _engine!.setEnableSpeakerphone(true);
       }
 
-      final token = await _fetchToken(_channelName!);
-      debugPrint("CallProvider: Joining Agora channel: $_channelName with token: ${token != null ? 'OK' : 'NULL'}");
+      final myUid = _getUidFromString(_currentUserId);
+      final token = await _fetchToken(_channelName!, myUid);
+      debugPrint("CallProvider: Joining Agora channel: $_channelName with uid: $myUid and token: ${token != null ? 'OK' : 'NULL'}");
 
       await _engine!.joinChannel(
         token: token ?? '',
         channelId: _channelName ?? 'default_channel',
-        uid: 0,
-        options: const ChannelMediaOptions(
+        uid: myUid,
+        options: ChannelMediaOptions(
           clientRoleType: ClientRoleType.clientRoleBroadcaster,
           publishMicrophoneTrack: true,
-          publishCameraTrack: true,
+          publishCameraTrack: _isVideo,
+          autoSubscribeAudio: true,
+          autoSubscribeVideo: _isVideo,
         ),
       );
+
+      // Explicitly unmute local and remote audio streams to ensure sound flows
+      await _engine!.muteLocalAudioStream(false);
+      await _engine!.muteAllRemoteAudioStreams(false);
     } catch (e) {
       debugPrint("Agora initialize/join error: $e");
+      _errorMessage = "Agora Init Error: $e";
+      notifyListeners();
     }
   }
 
   Future<void> _resetCall() async {
     _callState = CallState.idle;
+    _stopCallTimer();
     _remoteUserId = null;
     _remoteUserName = null;
     _localUid = null;
@@ -295,6 +391,7 @@ class CallProvider extends ChangeNotifier {
 
     _isMicMuted = false;
     _isCameraOff = false;
+    _isSpeakerOn = true;
     notifyListeners();
   }
 
@@ -311,6 +408,20 @@ class CallProvider extends ChangeNotifier {
       _isCameraOff = !_isCameraOff;
       _engine!.muteLocalVideoStream(_isCameraOff);
       notifyListeners();
+    }
+  }
+
+  void toggleSpeaker() {
+    if (_engine != null) {
+      _isSpeakerOn = !_isSpeakerOn;
+      _engine!.setEnableSpeakerphone(_isSpeakerOn);
+      notifyListeners();
+    }
+  }
+
+  void switchCamera() {
+    if (_engine != null && _isVideo) {
+      _engine!.switchCamera();
     }
   }
 }

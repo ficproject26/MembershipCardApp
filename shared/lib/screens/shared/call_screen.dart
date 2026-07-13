@@ -74,12 +74,30 @@ class CallScreen extends StatelessWidget {
                             ? 'Incoming ${callProvider.isVideo ? 'Video' : 'Voice'} Call...'
                             : isOutgoing
                                 ? 'Calling...'
-                                : 'Connected',
+                                : callProvider.formattedDuration,
                         style: const TextStyle(
                           color: Colors.white70,
                           fontSize: 16,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
+                      if (callProvider.errorMessage != null) ...[
+                        const SizedBox(height: 16),
+                        Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 24),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.red.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.red.withOpacity(0.3)),
+                          ),
+                          child: Text(
+                            callProvider.errorMessage!,
+                            style: const TextStyle(color: Colors.redAccent, fontSize: 13),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -133,6 +151,21 @@ class CallScreen extends StatelessWidget {
                             iconColor: callProvider.isCameraOff ? Colors.black : Colors.white,
                             onPressed: () => callProvider.toggleCamera(),
                           ),
+                        // Switch Camera Button
+                        if (callProvider.isVideo)
+                          _buildActionButton(
+                            icon: Icons.switch_camera,
+                            color: Colors.white24,
+                            iconColor: Colors.white,
+                            onPressed: () => callProvider.switchCamera(),
+                          ),
+                        // Speakerphone Toggle Button
+                        _buildActionButton(
+                          icon: callProvider.isSpeakerOn ? Icons.volume_up : Icons.volume_off,
+                          color: callProvider.isSpeakerOn ? Colors.white : Colors.white24,
+                          iconColor: callProvider.isSpeakerOn ? Colors.black : Colors.white,
+                          onPressed: () => callProvider.toggleSpeaker(),
+                        ),
                         // Hang Up Button
                         _buildActionButton(
                           icon: Icons.call_end,
