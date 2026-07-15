@@ -731,8 +731,11 @@ class _TlLeadsDashboardState extends State<_TlLeadsDashboard> {
     final pendingLeads = allLeads.where((l) => 
       l.serviceType == widget.serviceType &&
       (l.status == LeadStatus.Pending || 
+       l.status == LeadStatus.Stage1Pending || 
        l.status == LeadStatus.Stage1Approved || 
+       l.status == LeadStatus.Stage2Pending || 
        l.status == LeadStatus.Stage2Approved || 
+       l.status == LeadStatus.Stage3Pending || 
        l.status == LeadStatus.Stage3Approved ||
        (l.serviceType == 'Loan' && l.status == LeadStatus.Approved))
     ).toList();
@@ -959,63 +962,93 @@ class _TlLeadsDashboardState extends State<_TlLeadsDashboard> {
                           child: Divider(height: 1),
                         ),
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            OutlinedButton.icon(
-                              onPressed: () {
-                                state.verifyLead(lead.id, LeadStatus.Rejected, reason: 'Rejected by TL');
-                                showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Lead ${lead.id} rejected.'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
-                              },
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.redAccent,
-                                side: const BorderSide(color: Colors.redAccent),
-                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () {
+                                  LeadStatus rejectStatus = LeadStatus.Rejected;
+                                  if (lead.serviceType == 'Credit Card') {
+                                    if (lead.status == LeadStatus.Stage1Pending) rejectStatus = LeadStatus.Stage1Rejected;
+                                    else if (lead.status == LeadStatus.Stage2Pending) rejectStatus = LeadStatus.Stage2Rejected;
+                                    else if (lead.status == LeadStatus.Stage3Pending) rejectStatus = LeadStatus.Stage3Rejected;
+                                  }
+                                  state.verifyLead(lead.id, rejectStatus, reason: 'Rejected by TL');
+                                  showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Lead ${lead.id} rejected.'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
+                                },
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.redAccent,
+                                  side: const BorderSide(color: Colors.redAccent),
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                                ),
+                                icon: const Icon(Icons.close, size: 18),
+                                label: const FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text('Reject', style: TextStyle(fontSize: 12)),
+                                ),
                               ),
-                              icon: const Icon(Icons.close, size: 18),
-                              label: const Text('Reject'),
                             ),
                             const SizedBox(width: 12),
-                            ElevatedButton.icon(
-                              onPressed: () {
-                                LeadStatus nextStatus = LeadStatus.Stage1Approved;
-                                String msg = 'Verified Documents';
-                                
-                                if (lead.serviceType == 'Insurance') {
-                                  msg = 'KYC Verified';
-                                  if (lead.status == LeadStatus.Stage1Approved) { nextStatus = LeadStatus.Stage2Approved; msg = 'Sent to Underwriting'; }
-                                  else if (lead.status == LeadStatus.Stage2Approved) { nextStatus = LeadStatus.Approved; msg = 'Policy Activated'; }
-                                } else if (lead.serviceType == 'IT Projects') {
-                                  msg = 'Requirements Gathered';
-                                  if (lead.status == LeadStatus.Stage1Approved) { nextStatus = LeadStatus.Stage2Approved; msg = 'Moved to Development'; }
-                                  else if (lead.status == LeadStatus.Stage2Approved) { nextStatus = LeadStatus.Stage3Approved; msg = 'Sent to Testing'; }
-                                  else if (lead.status == LeadStatus.Stage3Approved) { nextStatus = LeadStatus.Approved; msg = 'Project Delivered'; }
-                                } else {
-                                  if (lead.status == LeadStatus.Stage1Approved) { nextStatus = LeadStatus.Stage2Approved; msg = 'Sent to Bank'; }
-                                  else if (lead.status == LeadStatus.Stage2Approved) { nextStatus = LeadStatus.Approved; msg = 'Final Approval'; }
-                                  else if (lead.status == LeadStatus.Approved) { nextStatus = LeadStatus.Dispatched; msg = 'Marked as Disbursed'; }
-                                }
-                                
-                                state.verifyLead(lead.id, nextStatus);
-                                showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Lead ${lead.id}: $msg!'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                              ),
-                              icon: const Icon(Icons.check, size: 18),
-                              label: Text(
-                                lead.serviceType == 'Insurance' ? 
-                                  (lead.status == LeadStatus.Pending ? 'Verify KYC' : 
-                                  (lead.status == LeadStatus.Stage1Approved ? 'Send to Underwriting' : 'Activate Policy')) 
-                                : lead.serviceType == 'IT Projects' ? 
-                                  (lead.status == LeadStatus.Pending ? 'Start Requirements' : 
-                                  (lead.status == LeadStatus.Stage1Approved ? 'Start Development' : 
-                                  (lead.status == LeadStatus.Stage2Approved ? 'Send to Testing' : 'Deliver Project')))
-                                :
-                                  (lead.status == LeadStatus.Pending ? 'Verify Documents' : 
-                                  (lead.status == LeadStatus.Stage1Approved ? 'Send to Bank' : 
-                                  (lead.status == LeadStatus.Stage2Approved ? 'Final Approval' : 'Mark Disbursed')))
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () {
+                                  LeadStatus nextStatus = LeadStatus.Stage1Approved;
+                                  String msg = 'Verified Documents';
+                                  
+                                  if (lead.serviceType == 'Insurance') {
+                                    msg = 'KYC Verified';
+                                    if (lead.status == LeadStatus.Stage1Approved) { nextStatus = LeadStatus.Stage2Approved; msg = 'Sent to Underwriting'; }
+                                    else if (lead.status == LeadStatus.Stage2Approved) { nextStatus = LeadStatus.Approved; msg = 'Policy Activated'; }
+                                  } else if (lead.serviceType == 'IT Projects') {
+                                    msg = 'Requirements Gathered';
+                                    if (lead.status == LeadStatus.Stage1Approved) { nextStatus = LeadStatus.Stage2Approved; msg = 'Moved to Development'; }
+                                    else if (lead.status == LeadStatus.Stage2Approved) { nextStatus = LeadStatus.Stage3Approved; msg = 'Sent to Testing'; }
+                                    else if (lead.status == LeadStatus.Stage3Approved) { nextStatus = LeadStatus.Approved; msg = 'Project Delivered'; }
+                                  } else if (lead.serviceType == 'Credit Card') {
+                                    if (lead.status == LeadStatus.Stage1Pending) {
+                                      nextStatus = LeadStatus.Stage1Approved;
+                                      msg = 'Stage 1 Approved';
+                                    } else if (lead.status == LeadStatus.Stage2Pending) {
+                                      nextStatus = LeadStatus.Stage2Approved;
+                                      msg = 'Lead Verified & Approved';
+                                    } else if (lead.status == LeadStatus.Stage3Pending) {
+                                      nextStatus = LeadStatus.Approved;
+                                      msg = 'Credit Card Lead Fully Approved';
+                                    }
+                                  } else {
+                                    if (lead.status == LeadStatus.Stage1Approved) { nextStatus = LeadStatus.Stage2Approved; msg = 'Sent to Bank'; }
+                                    else if (lead.status == LeadStatus.Stage2Approved) { nextStatus = LeadStatus.Approved; msg = 'Final Approval'; }
+                                    else if (lead.status == LeadStatus.Approved) { nextStatus = LeadStatus.Dispatched; msg = 'Marked as Disbursed'; }
+                                  }
+                                  
+                                  state.verifyLead(lead.id, nextStatus);
+                                  showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Lead ${lead.id}: $msg!'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.green,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+                                ),
+                                icon: const Icon(Icons.check, size: 18),
+                                label: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: Text(
+                                    lead.serviceType == 'Insurance' ? 
+                                      (lead.status == LeadStatus.Pending ? 'Verify KYC' : 
+                                      (lead.status == LeadStatus.Stage1Approved ? 'Send to Underwriting' : 'Activate Policy')) 
+                                    : lead.serviceType == 'IT Projects' ? 
+                                      (lead.status == LeadStatus.Pending ? 'Start Requirements' : 
+                                      (lead.status == LeadStatus.Stage1Approved ? 'Start Development' : 
+                                      (lead.status == LeadStatus.Stage2Approved ? 'Send to Testing' : 'Deliver Project')))
+                                    : lead.serviceType == 'Credit Card' ?
+                                      (lead.status == LeadStatus.Stage1Pending ? 'Verify Stage 1' :
+                                      (lead.status == LeadStatus.Stage2Pending ? 'Approve Lead' : 'Approve Bank Message'))
+                                    :
+                                      (lead.status == LeadStatus.Pending ? 'Verify Documents' : 
+                                      (lead.status == LeadStatus.Stage1Approved ? 'Send to Bank' : 
+                                      (lead.status == LeadStatus.Stage2Approved ? 'Final Approval' : 'Mark Disbursed'))),
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                ),
                               ),
                             ),
                           ],

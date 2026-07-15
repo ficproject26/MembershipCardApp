@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../prisma.service';
 import { QueueService } from '../queue/queue.service';
 import * as crypto from 'crypto';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
@@ -65,10 +66,13 @@ export class AuthService {
       throw new BadRequestException('Invalid or expired reset token');
     }
 
+    // ─── Security: Hash password with bcrypt before saving ───
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+
     await this.prisma.agent.update({
       where: { id: agent.id },
       data: {
-        password: newPassword, // In a real app, hash this before saving!
+        password: hashedPassword,
         resetToken: null,
         resetTokenExpiry: null,
       },
@@ -77,3 +81,4 @@ export class AuthService {
     return { message: 'Password has been reset successfully' };
   }
 }
+

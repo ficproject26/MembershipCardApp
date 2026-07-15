@@ -16,6 +16,9 @@ void main() async {
   } catch (e) {
     debugPrint('Firebase or Notification initialization failed: $e');
   }
+
+  // ─── Security: Check for rooted/jailbroken device ───
+  final isCompromised = await SecurityService.isDeviceCompromised();
   
   runApp(
     MultiProvider(
@@ -25,13 +28,15 @@ void main() async {
         ChangeNotifierProvider(create: (_) => StatusProvider()),
         ChangeNotifierProvider(create: (_) => CallProvider()),
       ],
-      child: const MyApp(),
+      child: MyApp(isDeviceCompromised: isCompromised),
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final bool isDeviceCompromised;
+
+  const MyApp({super.key, this.isDeviceCompromised = false});
 
   @override
   Widget build(BuildContext context) {
@@ -73,7 +78,52 @@ class MyApp extends StatelessWidget {
       builder: (context, child) {
         return IncomingCallOverlay(child: child!);
       },
-      home: const StaffLoginScreen(),
+      home: isDeviceCompromised
+          ? const _CompromisedDeviceScreen()
+          : const StaffLoginScreen(),
     );
   }
 }
+
+/// ─── Security: Blocking screen for rooted/jailbroken devices ───
+class _CompromisedDeviceScreen extends StatelessWidget {
+  const _CompromisedDeviceScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0D1B2A),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.shield, color: Colors.red, size: 80),
+              const SizedBox(height: 24),
+              Text(
+                'Security Alert',
+                style: GoogleFonts.outfit(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'This app cannot run on rooted or jailbroken devices for security reasons.\n\n'
+                'Please use a non-modified device to access this application.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.outfit(
+                  fontSize: 16,
+                  color: Colors.white70,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+

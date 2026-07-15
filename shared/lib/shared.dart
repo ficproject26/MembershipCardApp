@@ -20,6 +20,7 @@ export 'services/pricing_service.dart';
 export 'services/staff_service.dart';
 export 'services/notification_service.dart';
 export 'services/commission_service.dart';
+export 'services/security_service.dart';
 
 // Providers
 export 'providers/app_state_provider.dart';
@@ -40,4 +41,3 @@ export 'screens/shared/video_player_widget.dart';
 export 'screens/shared/call_screen.dart';
 export 'screens/shared/incoming_call_overlay.dart';
 
-final GlobalKey<NavigatorState> sharedNavigatorKey = GlobalKey<NavigatorState>();

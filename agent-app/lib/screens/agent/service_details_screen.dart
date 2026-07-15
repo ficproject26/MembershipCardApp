@@ -20,7 +20,13 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
 
   String _getStatusText(LeadModel lead, String serviceTitle) {
     String statusText = lead.status.name;
-    if (serviceTitle == 'Loan') {
+    if (serviceTitle == 'Credit Card') {
+      if (lead.status == LeadStatus.Stage1Pending || lead.status == LeadStatus.Stage2Pending) statusText = 'Pending';
+      else if (lead.status == LeadStatus.Stage2Approved) statusText = 'Verified';
+      else if (lead.status == LeadStatus.Stage3Pending) statusText = 'Awaiting Bank';
+      else if (lead.status == LeadStatus.Approved) statusText = 'Approved';
+      else if (lead.status == LeadStatus.Rejected || lead.status == LeadStatus.Stage1Rejected || lead.status == LeadStatus.Stage2Rejected || lead.status == LeadStatus.Stage3Rejected) statusText = 'Rejected';
+    } else if (serviceTitle == 'Loan') {
       if (lead.status == LeadStatus.Pending) statusText = 'Pending';
       else if (lead.status == LeadStatus.Stage1Approved) statusText = 'Verify';
       else if (lead.status == LeadStatus.Stage2Approved) statusText = 'Bank';
@@ -65,15 +71,16 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
     int rejectedCount = agentLeads.where((l) => 
       l.status == LeadStatus.Rejected || 
       l.status == LeadStatus.Stage1Rejected || 
-      l.status == LeadStatus.Stage2Rejected).length;
+      l.status == LeadStatus.Stage2Rejected ||
+      l.status == LeadStatus.Stage3Rejected).length;
     int dispatchedCount = agentLeads.where((l) => l.status == LeadStatus.Dispatched).length;
     int notDispatchedCount = agentLeads.where((l) => l.status == LeadStatus.Approved).length;
 
     // Service-specific KPI definitions
     final Map<String, List<Map<String, dynamic>>> serviceKpis = {
       'Credit Card': [
-        {'label': 'Stage 1', 'count': agentLeads.where((l) => l.status == LeadStatus.Stage1Pending || l.status == LeadStatus.Stage1Approved).length, 'color': Colors.blue},
-        {'label': 'Stage 2', 'count': agentLeads.where((l) => l.status == LeadStatus.Stage2Pending || l.status == LeadStatus.Stage2Approved).length, 'color': Colors.amber},
+        {'label': 'Pending', 'count': agentLeads.where((l) => l.status == LeadStatus.Stage1Pending || l.status == LeadStatus.Stage2Pending || l.status == LeadStatus.Stage3Pending).length, 'color': Colors.blue},
+        {'label': 'Verified', 'count': agentLeads.where((l) => l.status == LeadStatus.Stage2Approved).length, 'color': Colors.amber},
         {'label': 'Approved', 'count': approvedCount, 'color': Colors.green},
         {'label': 'Rejected', 'count': rejectedCount, 'color': Colors.red},
       ],
@@ -176,12 +183,16 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
           ],
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: Row(
+            child: GridView.count(
+              crossAxisCount: 4,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+              childAspectRatio: 1.1,
               children: [
-                for (int idx = 0; idx < kpis.length; idx++) ...[
-                  if (idx > 0) const SizedBox(width: 8),
-                  Expanded(child: _buildKpiCard(context, kpis[idx]['label'] as String, kpis[idx]['count'] as int, kpis[idx]['color'] as Color)),
-                ],
+                for (int idx = 0; idx < kpis.length; idx++)
+                  _buildKpiCard(context, kpis[idx]['label'] as String, kpis[idx]['count'] as int, kpis[idx]['color'] as Color),
               ],
             ),
           ),
@@ -195,6 +206,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                     scrollDirection: Axis.horizontal,
                     child: SingleChildScrollView(
                       child: DataTable(
+                        showCheckboxColumn: false,
                         columns: const [
                           DataColumn(label: Text('Customer', style: TextStyle(fontWeight: FontWeight.bold))),
                           DataColumn(label: Text('Status', style: TextStyle(fontWeight: FontWeight.bold))),
@@ -203,11 +215,25 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                         rows: filteredLeads.map((lead) {
                           String statusText = _getStatusText(lead, service.title);
 
-                          return DataRow(cells: [
-                            DataCell(Text(lead.customerName?.isNotEmpty == true ? lead.customerName! : 'Customer')),
-                            DataCell(Text(statusText)),
-                            DataCell(Text(lead.dateCreated.toString().split(' ')[0])),
-                          ]);
+                          return DataRow(
+                            selected: false,
+                            onSelectChanged: (selected) {
+                              if (selected == true) {
+                                if (service.title == 'Credit Card') {
+                                  if (lead.status == LeadStatus.Stage1Approved) {
+                                    _showCreditCardStage2Wizard(context, state, lead);
+                                  } else if (lead.status == LeadStatus.Stage2Approved) {
+                                    _showCreditCardStage3Wizard(context, state, lead);
+                                  }
+                                }
+                              }
+                            },
+                            cells: [
+                              DataCell(Text(lead.customerName?.isNotEmpty == true ? lead.customerName! : 'Customer')),
+                              DataCell(Text(statusText)),
+                              DataCell(Text(lead.dateCreated.toString().split(' ')[0])),
+                            ],
+                          );
                         }).toList(),
                       ),
                     ),
@@ -231,28 +257,48 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
   }
 
   void _showCreditCardStage1Wizard(BuildContext context, AppStateProvider state) {
+    final nameController = TextEditingController();
+    final dobController = TextEditingController();
+    final mobileController = TextEditingController();
+    final emailController = TextEditingController();
     final panController = TextEditingController();
     final pincodeController = TextEditingController();
+    final fatherController = TextEditingController();
+    final motherController = TextEditingController();
+    final addressController = TextEditingController();
+    final companyController = TextEditingController();
+    final designationController = TextEditingController();
 
     showDialog(
       context: context,
       builder: (ctx) {
         return AlertDialog(
-          title: const Text('Submit Credit Card Lead (Stage 1)'),
+          title: const Text('Submit Credit Card Lead'),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextField(
-                  controller: panController,
-                  decoration: const InputDecoration(labelText: 'Customer PAN Card', isDense: true),
-                ),
-                const SizedBox(height: 10),
-                TextField(
-                  controller: pincodeController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Customer Pincode', isDense: true),
-                ),
+                TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Customer Full Name', isDense: true)),
+                const SizedBox(height: 8),
+                TextField(controller: dobController, decoration: const InputDecoration(labelText: 'Date of Birth (DD/MM/YYYY)', isDense: true)),
+                const SizedBox(height: 8),
+                TextField(controller: mobileController, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'Customer Contact Number', isDense: true)),
+                const SizedBox(height: 8),
+                TextField(controller: emailController, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(labelText: 'Email Address', isDense: true)),
+                const SizedBox(height: 8),
+                TextField(controller: panController, decoration: const InputDecoration(labelText: 'Customer PAN Card', isDense: true)),
+                const SizedBox(height: 8),
+                TextField(controller: pincodeController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Customer Pincode', isDense: true)),
+                const SizedBox(height: 8),
+                TextField(controller: fatherController, decoration: const InputDecoration(labelText: 'Father Name', isDense: true)),
+                const SizedBox(height: 8),
+                TextField(controller: motherController, decoration: const InputDecoration(labelText: 'Mother Name', isDense: true)),
+                const SizedBox(height: 8),
+                TextField(controller: addressController, decoration: const InputDecoration(labelText: 'Residential Address', isDense: true)),
+                const SizedBox(height: 8),
+                TextField(controller: companyController, decoration: const InputDecoration(labelText: 'Company Name', isDense: true)),
+                const SizedBox(height: 8),
+                TextField(controller: designationController, decoration: const InputDecoration(labelText: 'Designation', isDense: true)),
               ],
             ),
           ),
@@ -264,29 +310,52 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A3B6E)),
               onPressed: () {
-                if (panController.text.trim().isEmpty || pincodeController.text.trim().isEmpty) {
-                  showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Please fill out PAN and Pincode'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
+                if (nameController.text.trim().isEmpty ||
+                    mobileController.text.trim().isEmpty ||
+                    panController.text.trim().isEmpty ||
+                    pincodeController.text.trim().isEmpty) {
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text("Notification"),
+                      content: const Text('Please fill out required fields (Name, Mobile, PAN, and Pincode)'),
+                      actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))],
+                    ),
+                  );
                   return;
                 }
 
                 state.submitLead(
+                  customerName: nameController.text.trim(),
+                  customerPhone: mobileController.text.trim(),
+                  customerEmail: emailController.text.trim().isNotEmpty ? emailController.text.trim() : null,
                   serviceType: 'Credit Card',
                   details: {
+                    'DOB': dobController.text.trim(),
                     'PAN': panController.text.trim(),
                     'Pincode': pincodeController.text.trim(),
+                    'Father Name': fatherController.text.trim(),
+                    'Mother Name': motherController.text.trim(),
+                    'Email': emailController.text.trim(),
+                    'Residential Address': addressController.text.trim(),
+                    'Company Name': companyController.text.trim(),
+                    'Designation': designationController.text.trim(),
                   },
-                  status: LeadStatus.Stage1Pending,
+                  status: LeadStatus.Stage2Pending,
                 );
 
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), 
-                    content: Text('Stage 1 Submitted Successfully! Awaiting TL Approval.'),
+                  SnackBar(
+                    behavior: SnackBarBehavior.floating,
+                    width: 400,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    content: const Text('Credit Card Lead Submitted Successfully! Awaiting TL Approval.'),
                     backgroundColor: Colors.green,
                   ),
                 );
               },
-              child: const Text('Submit to TL', style: TextStyle(color: Colors.white)),
+              child: const Text('Submit Lead', style: TextStyle(color: Colors.white)),
             ),
           ],
         );
@@ -665,18 +734,21 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
         });
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+        padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
         decoration: BoxDecoration(
           color: isSelected ? color.withOpacity(0.3) : color.withOpacity(0.1),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(color: isSelected ? color : color.withOpacity(0.3), width: isSelected ? 2 : 1),
         ),
-        child: Column(
-          children: [
-            Text(count.toString(), style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
-            const SizedBox(height: 4),
-            Text(title, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: color), textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis),
-          ],
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Column(
+            children: [
+              Text(count.toString(), style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
+              const SizedBox(height: 2),
+              Text(title, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: color), textAlign: TextAlign.center, maxLines: 1, overflow: TextOverflow.ellipsis),
+            ],
+          ),
         ),
       ),
     );
