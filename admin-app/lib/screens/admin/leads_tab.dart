@@ -11,10 +11,11 @@ class AdminLeadsTab extends StatelessWidget {
     final isDark = state.isDarkMode;
 
     final pendingLeads = state.leads.where((l) => l.status == LeadStatus.Pending).toList();
-    final processedLeads = state.leads.where((l) => l.status != LeadStatus.Pending).toList();
+    final completedLeads = state.leads.where((l) => l.status == LeadStatus.Approved).toList();
+    final rejectedLeads = state.leads.where((l) => l.status == LeadStatus.Rejected).toList();
 
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Column(
         children: [
           TabBar(
@@ -23,14 +24,16 @@ class AdminLeadsTab extends StatelessWidget {
             indicatorColor: const Color(0xFFFFC107),
             tabs: [
               Tab(text: 'Pending (${pendingLeads.length})'),
-              Tab(text: 'Processed (${processedLeads.length})'),
+              Tab(text: 'Completed (${completedLeads.length})'),
+              Tab(text: 'Rejected (${rejectedLeads.length})'),
             ],
           ),
           Expanded(
             child: TabBarView(
               children: [
-                _buildLeadList(context, pendingLeads, true, state, isDark),
-                _buildLeadList(context, processedLeads, false, state, isDark),
+                _buildLeadList(context, pendingLeads, true, 'No pending leads to review', state, isDark),
+                _buildLeadList(context, completedLeads, false, 'No completed leads found', state, isDark),
+                _buildLeadList(context, rejectedLeads, false, 'No rejected leads found', state, isDark),
               ],
             ),
           )
@@ -43,6 +46,7 @@ class AdminLeadsTab extends StatelessWidget {
     BuildContext context,
     List<LeadModel> list,
     bool isPending,
+    String emptyMessage,
     AppStateProvider state,
     bool isDark,
   ) {
@@ -54,7 +58,7 @@ class AdminLeadsTab extends StatelessWidget {
             Icon(isPending ? Icons.check_circle_outline : Icons.assignment_outlined, color: const Color(0xFFFFC107), size: 48),
             const SizedBox(height: 12),
             Text(
-              isPending ? 'No pending leads to review' : 'No processed leads found',
+              emptyMessage,
               style: TextStyle(color: isDark ? Colors.white54 : Colors.black54),
             ),
           ],

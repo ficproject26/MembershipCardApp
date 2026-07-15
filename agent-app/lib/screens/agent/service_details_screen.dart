@@ -5,6 +5,7 @@ import 'services_tab.dart'; // To get ServiceItem
 import 'package:file_picker/file_picker.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/services.dart';
 
 class ServiceDetailsScreen extends StatefulWidget {
   final ServiceItem service;
@@ -21,9 +22,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
   String _getStatusText(LeadModel lead, String serviceTitle) {
     String statusText = lead.status.name;
     if (serviceTitle == 'Credit Card') {
-      if (lead.status == LeadStatus.Stage1Pending || lead.status == LeadStatus.Stage2Pending) statusText = 'Pending';
-      else if (lead.status == LeadStatus.Stage2Approved) statusText = 'Verified';
-      else if (lead.status == LeadStatus.Stage3Pending) statusText = 'Awaiting Bank';
+      if (lead.status == LeadStatus.Pending) statusText = 'Pending';
       else if (lead.status == LeadStatus.Approved) statusText = 'Approved';
       else if (lead.status == LeadStatus.Rejected || lead.status == LeadStatus.Stage1Rejected || lead.status == LeadStatus.Stage2Rejected || lead.status == LeadStatus.Stage3Rejected) statusText = 'Rejected';
     } else if (serviceTitle == 'Loan') {
@@ -79,8 +78,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
     // Service-specific KPI definitions
     final Map<String, List<Map<String, dynamic>>> serviceKpis = {
       'Credit Card': [
-        {'label': 'Pending', 'count': agentLeads.where((l) => l.status == LeadStatus.Stage1Pending || l.status == LeadStatus.Stage2Pending || l.status == LeadStatus.Stage3Pending).length, 'color': Colors.blue},
-        {'label': 'Verified', 'count': agentLeads.where((l) => l.status == LeadStatus.Stage2Approved).length, 'color': Colors.amber},
+        {'label': 'Pending', 'count': agentLeads.where((l) => l.status == LeadStatus.Pending || l.status == LeadStatus.Stage1Pending || l.status == LeadStatus.Stage2Pending || l.status == LeadStatus.Stage3Pending).length, 'color': Colors.blue},
         {'label': 'Approved', 'count': approvedCount, 'color': Colors.green},
         {'label': 'Rejected', 'count': rejectedCount, 'color': Colors.red},
       ],
@@ -218,15 +216,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                           return DataRow(
                             selected: false,
                             onSelectChanged: (selected) {
-                              if (selected == true) {
-                                if (service.title == 'Credit Card') {
-                                  if (lead.status == LeadStatus.Stage1Approved) {
-                                    _showCreditCardStage2Wizard(context, state, lead);
-                                  } else if (lead.status == LeadStatus.Stage2Approved) {
-                                    _showCreditCardStage3Wizard(context, state, lead);
-                                  }
-                                }
-                              }
+                              // Details view or wizard trigger could go here if needed
                             },
                             cells: [
                               DataCell(Text(lead.customerName?.isNotEmpty == true ? lead.customerName! : 'Customer')),
@@ -282,7 +272,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                 const SizedBox(height: 8),
                 TextField(controller: dobController, decoration: const InputDecoration(labelText: 'Date of Birth (DD/MM/YYYY)', isDense: true)),
                 const SizedBox(height: 8),
-                TextField(controller: mobileController, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'Customer Contact Number', isDense: true)),
+                TextField(controller: mobileController, keyboardType: TextInputType.phone, inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(10)], decoration: const InputDecoration(labelText: 'Customer Contact Number', isDense: true, counterText: '')),
                 const SizedBox(height: 8),
                 TextField(controller: emailController, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(labelText: 'Email Address', isDense: true)),
                 const SizedBox(height: 8),
@@ -325,6 +315,18 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                   return;
                 }
 
+                if (mobileController.text.trim().length != 10) {
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text("Notification"),
+                      content: const Text('Please enter a valid 10-digit contact number'),
+                      actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))],
+                    ),
+                  );
+                  return;
+                }
+
                 state.submitLead(
                   customerName: nameController.text.trim(),
                   customerPhone: mobileController.text.trim(),
@@ -341,7 +343,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                     'Company Name': companyController.text.trim(),
                     'Designation': designationController.text.trim(),
                   },
-                  status: LeadStatus.Stage2Pending,
+                  status: LeadStatus.Pending,
                 );
 
                 Navigator.pop(ctx);
@@ -363,148 +365,7 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
     );
   }
 
-  void _showCreditCardStage2Wizard(BuildContext context, AppStateProvider state, LeadModel lead) {
-    final nameController = TextEditingController();
-    final dobController = TextEditingController();
-    final mobileController = TextEditingController();
-    final panController = TextEditingController(text: lead.details['PAN'] ?? '');
-    final fatherController = TextEditingController();
-    final motherController = TextEditingController();
-    final emailController = TextEditingController();
-    final addressController = TextEditingController();
-    final companyController = TextEditingController();
-    final designationController = TextEditingController();
 
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          title: const Text('Complete Credit Card Form (Stage 2)'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Name', isDense: true)),
-                const SizedBox(height: 8),
-                TextField(controller: dobController, decoration: const InputDecoration(labelText: 'Date of Birth', isDense: true)),
-                const SizedBox(height: 8),
-                TextField(controller: mobileController, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'Mobile No', isDense: true)),
-                const SizedBox(height: 8),
-                TextField(controller: panController, decoration: const InputDecoration(labelText: 'PAN NO', isDense: true)),
-                const SizedBox(height: 8),
-                TextField(controller: fatherController, decoration: const InputDecoration(labelText: 'Father Name', isDense: true)),
-                const SizedBox(height: 8),
-                TextField(controller: motherController, decoration: const InputDecoration(labelText: 'Mother Name', isDense: true)),
-                const SizedBox(height: 8),
-                TextField(controller: emailController, keyboardType: TextInputType.emailAddress, decoration: const InputDecoration(labelText: 'Email Address', isDense: true)),
-                const SizedBox(height: 8),
-                TextField(controller: addressController, decoration: const InputDecoration(labelText: 'Residential Address', isDense: true)),
-                const SizedBox(height: 8),
-                TextField(controller: companyController, decoration: const InputDecoration(labelText: 'Company Name', isDense: true)),
-                const SizedBox(height: 8),
-                TextField(controller: designationController, decoration: const InputDecoration(labelText: 'Designation', isDense: true)),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A3B6E)),
-              onPressed: () {
-                if (nameController.text.trim().isEmpty || mobileController.text.trim().isEmpty) {
-                  showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Please fill out all required fields'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
-                  return;
-                }
-
-                state.submitStage2Lead(
-                  lead.id,
-                  nameController.text.trim(),
-                  mobileController.text.trim(),
-                  {
-                    'DOB': dobController.text.trim(),
-                    'PAN': panController.text.trim(),
-                    'Father Name': fatherController.text.trim(),
-                    'Mother Name': motherController.text.trim(),
-                    'Email': emailController.text.trim(),
-                    'Residential Address': addressController.text.trim(),
-                    'Company Name': companyController.text.trim(),
-                    'Designation': designationController.text.trim(),
-                  },
-                );
-
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), 
-                    content: Text('Stage 2 Submitted Successfully! Awaiting final TL Approval.'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-              },
-              child: const Text('Submit Lead', style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showCreditCardStage3Wizard(BuildContext context, AppStateProvider state, LeadModel lead) {
-    final messageController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          title: const Text('Submit Bank Message (Stage 3)'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('Paste the exact message the customer received from the bank below:', style: TextStyle(fontSize: 12)),
-              const SizedBox(height: 10),
-              TextField(
-                controller: messageController,
-                maxLines: 4,
-                decoration: const InputDecoration(
-                  labelText: 'Bank Confirmation Message',
-                  border: OutlineInputBorder(),
-                  alignLabelWithHint: true,
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A3B6E)),
-              onPressed: () {
-                if (messageController.text.trim().isEmpty) {
-                  showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Please paste the bank message.'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
-                  return;
-                }
-
-                state.submitStage3Lead(lead.id, messageController.text.trim());
-
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), 
-                    content: Text('Stage 3 Submitted! Awaiting Final Approval.'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-              },
-              child: const Text('Submit to TL', style: TextStyle(color: Colors.white)),
-            ),
-          ],
-        );
-      },
-    );
-  }
 
   void _showLeadSubmissionWizard(
     BuildContext context,
@@ -569,7 +430,8 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                     TextField(
                       controller: phoneController,
                       keyboardType: TextInputType.phone,
-                      decoration: const InputDecoration(labelText: 'Customer Contact Number', isDense: true),
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(10)],
+                      decoration: const InputDecoration(labelText: 'Customer Contact Number', isDense: true, counterText: ''),
                     ),
                     const SizedBox(height: 10),
                     if (dropdownOptions.isNotEmpty) ...[
@@ -679,6 +541,10 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
                   onPressed: () {
                     if (nameController.text.trim().isEmpty || phoneController.text.trim().isEmpty) {
                       showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Please fill out required fields'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
+                      return;
+                    }
+                    if (phoneController.text.trim().length != 10) {
+                      showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: const Text('Please enter a valid 10-digit contact number'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
                       return;
                     }
                     if (service.title == 'Jobs' && selectedResume == null) {

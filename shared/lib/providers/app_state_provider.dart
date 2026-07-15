@@ -340,6 +340,13 @@ class AppStateProvider extends ChangeNotifier {
     required String password,
   }) async {
     try {
+      if (_staff.any((s) => s.email.toLowerCase() == email.toLowerCase())) {
+        throw Exception('A staff member with this email already exists.');
+      }
+      if (_staff.any((s) => s.phoneNumber == phoneNumber)) {
+        throw Exception('A staff member with this phone number already exists.');
+      }
+
       final newStaff = await _staffService.createStaff({
         'name': name,
         'email': email,
@@ -357,6 +364,34 @@ class AppStateProvider extends ChangeNotifier {
       return null;
     }
   }
+
+  Future<StaffModel?> updateStaff(String id, Map<String, dynamic> data) async {
+    try {
+      final updated = await _staffService.updateStaff(id, data);
+      final idx = _staff.indexWhere((s) => s.id == id);
+      if (idx != -1) _staff[idx] = updated;
+      notifyListeners();
+      return updated;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return null;
+    }
+  }
+
+  Future<bool> deleteStaff(String id) async {
+    try {
+      await _staffService.deleteStaff(id);
+      _staff.removeWhere((s) => s.id == id);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
 
   Future<StaffModel?> staffLogin(String email, String password) async {
     try {

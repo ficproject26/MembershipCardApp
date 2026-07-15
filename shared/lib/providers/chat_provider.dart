@@ -53,6 +53,32 @@ class ChatProvider with ChangeNotifier {
     });
 
     _socket!.onDisconnect((_) => print('Disconnected from Socket Server'));
+
+    // Fetch recent chats immediately on init
+    fetchRecentChats();
+  }
+
+  Future<void> fetchRecentChats() async {
+    if (_currentUserId == null) return;
+    try {
+      final response = await ApiClient.instance.get('/chat/recent/$_currentUserId');
+      final List<dynamic> data = response.data;
+      
+      for (var json in data) {
+        final msg = MessageModel.fromJson(json);
+        final partnerId = (msg.senderId == _currentUserId) ? msg.receiverId : msg.senderId;
+        
+        _lastMessages[partnerId] = msg;
+        
+        // Also populate messages list with at least the last message if empty
+        if (!_messages.containsKey(partnerId)) {
+          _messages[partnerId] = [msg];
+        }
+      }
+      notifyListeners();
+    } catch (e) {
+      print('Error fetching recent chats: $e');
+    }
   }
 
   Future<void> fetchHistory(String partnerId) async {

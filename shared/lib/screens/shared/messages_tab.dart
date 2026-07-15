@@ -12,6 +12,7 @@ import 'call_screen.dart';
 import '../../models/staff_model.dart';
 import '../../models/message_model.dart';
 import 'new_chat_screen.dart';
+import 'broadcast_screen.dart';
 import 'video_player_widget.dart';
 import 'full_screen_viewer.dart';
 import 'story_viewer_widget.dart';
@@ -346,7 +347,15 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
               const SizedBox(width: 8),
               GestureDetector(
                 onTap: () {
-                  showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Broadcast message feature coming soon!'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => BroadcastScreen(
+                        currentUserId: widget.currentUserId,
+                        currentUserRole: widget.currentUserRole,
+                      ),
+                    ),
+                  );
                 },
                 child: Container(
                   padding: const EdgeInsets.all(8),
@@ -424,15 +433,15 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
                                 padding: EdgeInsets.all(myStatuses.isNotEmpty ? 2 : 0),
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: myStatuses.isNotEmpty ? const Color(0xFF0C1017) : Colors.transparent,
+                                  color: myStatuses.isNotEmpty ? (isDark ? const Color(0xFF0C1017) : Colors.white) : Colors.transparent,
                                 ),
                                 child: Container(
                                   width: myStatuses.isNotEmpty ? 42 : 50,
                                   height: myStatuses.isNotEmpty ? 42 : 50,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    color: Colors.white.withOpacity(0.05),
-                                    border: myStatuses.isEmpty ? Border.all(color: Colors.white.withOpacity(0.1), width: 1.5) : null,
+                                    color: isDark ? Colors.white.withOpacity(0.05) : Colors.black.withOpacity(0.05),
+                                    border: myStatuses.isEmpty ? Border.all(color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.1), width: 1.5) : null,
                                   ),
                                   child: statusProvider.isUploading && statusProvider.uploadingFile != null
                                       ? ClipOval(
@@ -440,7 +449,7 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
                                               ? Image.network(statusProvider.uploadingFile!.path, fit: BoxFit.cover, width: 50, height: 50)
                                               : Image.file(statusProvider.uploadingFile!, fit: BoxFit.cover, width: 50, height: 50)),
                                         )
-                                      : const Icon(Icons.person, color: Colors.white54, size: 22),
+                                      : Icon(Icons.person, color: isDark ? Colors.white54 : Colors.black54, size: 22),
                                 ),
                               ),
                             ),
@@ -471,8 +480,8 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
                               },
                               child: Container(
                                 padding: const EdgeInsets.all(2),
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFF0C1017),
+                                decoration: BoxDecoration(
+                                  color: isDark ? const Color(0xFF0C1017) : Colors.white,
                                   shape: BoxShape.circle,
                                 ),
                                 child: Container(
@@ -489,7 +498,7 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
                         ],
                       ),
                       const SizedBox(height: 4),
-                      const Text('You', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w600)),
+                      Text('You', style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 10, fontWeight: FontWeight.w600)),
                     ],
                   ),
                 ),
@@ -517,7 +526,7 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
                               ),
                               child: Container(
                                 padding: const EdgeInsets.all(2),
-                                decoration: const BoxDecoration(shape: BoxShape.circle, color: Color(0xFF0C1017)),
+                                decoration: BoxDecoration(shape: BoxShape.circle, color: isDark ? const Color(0xFF0C1017) : Colors.white),
                                 child: Container(
                                   width: 42,
                                   height: 42,
@@ -525,7 +534,7 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
                                     shape: BoxShape.circle,
                                     gradient: LinearGradient(colors: [const Color(0xFF0891B2), const Color(0xFF22D3EE)]),
                                   ),
-                                  child: Icon(Icons.person, color: Colors.white, size: 20),
+                                  child: Icon(Icons.person, color: isDark ? Colors.white : Colors.black54, size: 20),
                                 ),
                               ),
                             ),
@@ -534,7 +543,7 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
                               width: 54,
                               child: Text(
                                 status.userName.split(' ').first,
-                                style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w600),
+                                style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 9, fontWeight: FontWeight.w600),
                                 overflow: TextOverflow.ellipsis,
                                 textAlign: TextAlign.center,
                               ),
@@ -548,7 +557,7 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
             ),
           ),
 
-        Divider(height: 1, color: Colors.white.withOpacity(0.06)),
+        Divider(height: 1, color: isDark ? Colors.white.withOpacity(0.06) : Colors.black.withOpacity(0.06)),
 
         // Contact list
         Expanded(
@@ -557,11 +566,11 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.chat_bubble_outline, size: 48, color: Colors.white.withOpacity(0.15)),
+                      Icon(Icons.chat_bubble_outline, size: 48, color: isDark ? Colors.white.withOpacity(0.15) : Colors.black.withOpacity(0.15)),
                       const SizedBox(height: 12),
                       Text(
                         _searchQuery.isEmpty ? 'No contacts yet' : 'No contacts matching "$_searchQuery"',
-                        style: const TextStyle(color: Colors.white38, fontSize: 14),
+                        style: TextStyle(color: isDark ? Colors.white38 : Colors.black45, fontSize: 14),
                       ),
                     ],
                   ),
@@ -581,6 +590,8 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
   }
 
   Widget _buildContactTile(BuildContext context, _ContactItem contact) {
+    final state = Provider.of<AppStateProvider>(context, listen: false);
+    final isDark = state.isDarkMode;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -588,7 +599,7 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: Colors.white.withOpacity(0.04))),
+            border: Border(bottom: BorderSide(color: isDark ? Colors.white.withOpacity(0.04) : Colors.black.withOpacity(0.04))),
           ),
           child: Row(
             children: [
@@ -614,7 +625,7 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
                         decoration: BoxDecoration(
                           color: const Color(0xFF10B981),
                           shape: BoxShape.circle,
-                          border: Border.all(color: const Color(0xFF0C1017), width: 2),
+                          border: Border.all(color: isDark ? const Color(0xFF0C1017) : Colors.white, width: 2),
                         ),
                       ),
                     ),
@@ -632,7 +643,7 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
                           child: Text(
                             contact.name,
                             style: TextStyle(
-                              color: Colors.white,
+                              color: isDark ? Colors.white : Colors.black87,
                               fontSize: 15,
                               fontWeight: contact.unreadCount > 0 ? FontWeight.bold : FontWeight.w500,
                             ),
@@ -643,7 +654,7 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
                         Text(
                           contact.lastTime,
                           style: TextStyle(
-                            color: contact.unreadCount > 0 ? const Color(0xFFFFC107) : Colors.white30,
+                            color: contact.unreadCount > 0 ? const Color(0xFFFFC107) : (isDark ? Colors.white30 : Colors.black45),
                             fontSize: 11,
                             fontWeight: contact.unreadCount > 0 ? FontWeight.bold : FontWeight.normal,
                           ),
@@ -662,7 +673,7 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
                           child: Text(
                             contact.role,
                             style: TextStyle(
-                              color: contact.gradientColors.last,
+                              color: isDark ? contact.gradientColors.last : contact.gradientColors.first,
                               fontSize: 8,
                               fontWeight: FontWeight.bold,
                               letterSpacing: 0.5,
@@ -674,7 +685,9 @@ class _SharedMessagesTabState extends State<SharedMessagesTab> {
                           child: Text(
                             contact.lastMessage,
                             style: TextStyle(
-                              color: contact.unreadCount > 0 ? Colors.white70 : Colors.white38,
+                              color: contact.unreadCount > 0 
+                                  ? (isDark ? Colors.white70 : Colors.black87) 
+                                  : (isDark ? Colors.white38 : Colors.black54),
                               fontSize: 12,
                               fontWeight: contact.unreadCount > 0 ? FontWeight.w600 : FontWeight.normal,
                             ),
@@ -1230,17 +1243,45 @@ class _ChatScreenState extends State<_ChatScreen> {
                 ),
               )
             else if (msg.type == 'DOCUMENT' || msg.type == 'AUDIO')
-              Container(
-                padding: const EdgeInsets.all(12),
-                margin: const EdgeInsets.only(bottom: 6),
-                decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(8)),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(msg.type == 'AUDIO' ? Icons.headset : Icons.insert_drive_file, color: isMe ? const Color(0xFFFFC107) : Colors.white70),
-                    const SizedBox(width: 8),
-                    Flexible(child: Text(msg.content, style: TextStyle(color: isMe ? const Color(0xFFFFC107) : Colors.white))),
-                  ],
+              GestureDetector(
+                onTap: () async {
+                  if (msg.mediaUrl != null && msg.mediaUrl!.isNotEmpty) {
+                    final url = Uri.parse('${ApiClient.instance.options.baseUrl}${msg.mediaUrl}');
+                    if (await canLaunchUrl(url)) {
+                      await launchUrl(url, mode: LaunchMode.externalApplication);
+                    } else {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Could not open document')),
+                        );
+                      }
+                    }
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('File unavailable')),
+                    );
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  margin: const EdgeInsets.only(bottom: 6),
+                  decoration: BoxDecoration(color: Colors.white10, borderRadius: BorderRadius.circular(8)),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(msg.type == 'AUDIO' ? Icons.headset : Icons.insert_drive_file, color: isMe ? const Color(0xFFFFC107) : Colors.white70),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          msg.content, 
+                          style: TextStyle(
+                            color: isMe ? const Color(0xFFFFC107) : Colors.white,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               )
             else if (msg.type == 'LOCATION')

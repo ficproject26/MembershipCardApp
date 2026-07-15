@@ -12,7 +12,8 @@ class AgentService {
           .map((e) => AgentModel.fromJson(e))
           .toList();
     } on DioException catch (e) {
-      throw Exception('Failed to load agents: ${e.message}');
+      final errorMsg = e.response?.data?['message'] ?? e.message;
+      throw Exception('Failed to load agents: $errorMsg');
     }
   }
 
@@ -21,7 +22,8 @@ class AgentService {
       final response = await _dio.get('/agent/$id');
       return AgentModel.fromJson(response.data);
     } on DioException catch (e) {
-      throw Exception('Failed to load agent: ${e.message}');
+      final errorMsg = e.response?.data?['message'] ?? e.message;
+      throw Exception('Failed to load agent: $errorMsg');
     }
   }
 
@@ -30,7 +32,8 @@ class AgentService {
       final response = await _dio.post('/agent', data: data);
       return AgentModel.fromJson(response.data);
     } on DioException catch (e) {
-      throw Exception('Failed to create agent: ${e.message}');
+      final errorMsg = e.response?.data?['message'] ?? e.message;
+      throw Exception(errorMsg);
     }
   }
 
@@ -52,7 +55,8 @@ class AgentService {
       final response = await _dio.patch('/agent/$id', data: data);
       return AgentModel.fromJson(response.data);
     } on DioException catch (e) {
-      throw Exception('Failed to update agent: ${e.message}');
+      final errorMsg = e.response?.data?['message'] ?? e.message;
+      throw Exception('Failed to update agent: $errorMsg');
     }
   }
 
@@ -60,7 +64,8 @@ class AgentService {
     try {
       await _dio.delete('/agent/$id');
     } on DioException catch (e) {
-      throw Exception('Failed to delete agent: ${e.message}');
+      final errorMsg = e.response?.data?['message'] ?? e.message;
+      throw Exception('Failed to delete agent: $errorMsg');
     }
   }
 

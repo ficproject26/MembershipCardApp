@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared/shared.dart';
 import 'agent/agent_shell.dart';
@@ -551,7 +552,16 @@ class _AgentLoginScreenState extends State<AgentLoginScreen> {
       children: [
         _buildDarkTextField(controller: _regNameController, label: 'Full Name', icon: Icons.person_outline),
         const SizedBox(height: 16),
-        _buildDarkTextField(controller: _regPhoneController, label: 'Phone Number', icon: Icons.phone_outlined, keyboardType: TextInputType.phone),
+        _buildDarkTextField(
+          controller: _regPhoneController,
+          label: 'Phone Number',
+          icon: Icons.phone_outlined,
+          keyboardType: TextInputType.phone,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(10),
+          ],
+        ),
         const SizedBox(height: 16),
         _buildDarkTextField(controller: _regEmailController, label: 'Email Address', icon: Icons.email_outlined, keyboardType: TextInputType.emailAddress),
         const SizedBox(height: 16),
@@ -642,13 +652,28 @@ class _AgentLoginScreenState extends State<AgentLoginScreen> {
           ),
           child: ElevatedButton(
             onPressed: () {
+              final phone = _regPhoneController.text.trim();
+              final email = _regEmailController.text.trim();
+              
               if (_regNameController.text.trim().isEmpty ||
-                  _regPhoneController.text.trim().isEmpty ||
-                  _regEmailController.text.trim().isEmpty ||
+                  phone.isEmpty ||
+                  email.isEmpty ||
                   _regPasswordController.text.trim().isEmpty) {
-                showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: Text('Please fill in Name, Phone, Email, and Password.'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
+                showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: const Text('Please fill in Name, Phone, Email, and Password.'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
                 return;
               }
+              
+              if (phone.length != 10) {
+                showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: const Text('Phone number must be exactly 10 digits.'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
+                return;
+              }
+              
+              final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+              if (!emailRegex.hasMatch(email)) {
+                showDialog(context: context, builder: (ctx) => AlertDialog(title: const Text("Notification"), content: const Text('Please enter a valid email address.'), actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text("OK"))]));
+                return;
+              }
+              
               _simulateRegisterCheckout(context, state);
             },
             style: ElevatedButton.styleFrom(
@@ -684,7 +709,7 @@ class _AgentLoginScreenState extends State<AgentLoginScreen> {
     );
   }
 
-  Widget _buildDarkTextField({required TextEditingController controller, required String label, required IconData icon, TextInputType keyboardType = TextInputType.text}) {
+  Widget _buildDarkTextField({required TextEditingController controller, required String label, required IconData icon, TextInputType keyboardType = TextInputType.text, List<TextInputFormatter>? inputFormatters}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -693,6 +718,7 @@ class _AgentLoginScreenState extends State<AgentLoginScreen> {
         TextField(
           controller: controller,
           keyboardType: keyboardType,
+          inputFormatters: inputFormatters,
           style: const TextStyle(color: Colors.white),
           decoration: InputDecoration(
             hintText: 'Enter your $label',

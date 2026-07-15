@@ -38,8 +38,8 @@ class _AdminShellState extends State<AdminShell> {
     });
   }
 
-  final List<Widget> _tabs = [
-    const AdminDashboardTab(),
+  List<Widget> get _tabs => [
+    AdminDashboardTab(onNavigate: (idx) => setState(() => _currentIndex = idx)),
     const AdminLeadsTab(),
     const AdminAgentsTab(),
     const SharedMessagesTab(currentUserId: 'admin', currentUserName: 'Admin', currentUserRole: 'Admin'),

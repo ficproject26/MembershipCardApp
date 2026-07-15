@@ -70,6 +70,8 @@ export class AgentService {
       this.queueService.sendWelcomeEmail(createdAgent.email, createdAgent.fullName || 'Member');
       this.queueService.sendVerificationEmail(createdAgent.email, verificationToken);
 
+      await this.redisService.del('agents:all');
+
       return {
         ...createdAgent,
         referredBy: referredBy || null,
@@ -138,15 +140,19 @@ export class AgentService {
   }
 
   async update(id: string, updateAgentDto: any) {
-    return this.prisma.agent.update({
+    const updated = await this.prisma.agent.update({
       where: { id },
       data: updateAgentDto,
     });
+    await this.redisService.del('agents:all');
+    return updated;
   }
 
   async remove(id: string) {
-    return this.prisma.agent.delete({
+    const deleted = await this.prisma.agent.delete({
       where: { id },
     });
+    await this.redisService.del('agents:all');
+    return deleted;
   }
 }

@@ -197,11 +197,11 @@ class AdminAgentsTab extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: _buildDocCard('Aadhaar Card', agent.aadhaarNumber ?? 'N/A', isDark),
+                    child: _buildDocCard('Aadhaar Card', agent.aadhaarNumber ?? 'N/A', isDark, context),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
-                    child: _buildDocCard('PAN Card', agent.panNumber ?? 'N/A', isDark),
+                    child: _buildDocCard('PAN Card', agent.panNumber ?? 'N/A', isDark, context),
                   ),
                 ],
               ),
@@ -209,16 +209,22 @@ class AdminAgentsTab extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: _buildDocCard('Bank Name', agent.bankAccountName ?? 'N/A', isDark),
+                    child: _buildDocCard('Bank Name', agent.bankAccountName ?? 'N/A', isDark, context),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 12),
                   Expanded(
-                    child: _buildDocCard('Account #', agent.bankAccountNumber ?? 'N/A', isDark),
+                    child: _buildDocCard('Account #', agent.bankAccountNumber ?? 'N/A', isDark, context),
                   ),
-                  const SizedBox(width: 8),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
                   Expanded(
-                    child: _buildDocCard('IFSC', agent.bankIfscCode ?? 'N/A', isDark),
+                    child: _buildDocCard('IFSC', agent.bankIfscCode ?? 'N/A', isDark, context),
                   ),
+                  const SizedBox(width: 12),
+                  const Spacer(),
                 ],
               ),
               if (agent.photoUrl != null && agent.photoUrl!.isNotEmpty) ...[
@@ -284,7 +290,7 @@ class AdminAgentsTab extends StatelessWidget {
     );
   }
 
-  Widget _buildDocCard(String title, String docNum, bool isDark) {
+  Widget _buildDocCard(String title, String docNum, bool isDark, BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -297,7 +303,7 @@ class AdminAgentsTab extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFF1A3B6E)),
+            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF1A3B6E)),
           ),
           const SizedBox(height: 4),
           Text(
@@ -309,15 +315,29 @@ class AdminAgentsTab extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          Row(
-            children: const [
-              Icon(Icons.attachment, size: 12, color: const Color(0xFF1A3B6E)),
-              SizedBox(width: 4),
-              Text(
-                'doc_scanned.jpg',
-                style: TextStyle(fontSize: 9, color: const Color(0xFF1A3B6E), decoration: TextDecoration.underline),
-              )
-            ],
+          InkWell(
+            onTap: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Opening document...'),
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
+            },
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Icon(Icons.attachment, size: 12, color: Color(0xFF1A3B6E)),
+                SizedBox(width: 4),
+                Flexible(
+                  child: Text(
+                    'doc_scanned.jpg',
+                    style: TextStyle(fontSize: 9, color: Color(0xFF1A3B6E), decoration: TextDecoration.underline),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                )
+              ],
+            ),
           )
         ],
       ),

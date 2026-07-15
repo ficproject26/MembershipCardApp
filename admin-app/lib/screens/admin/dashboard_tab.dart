@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:shared/shared.dart';
+import 'payouts_tab.dart';
+import 'commission_tab.dart';
 
 class AdminDashboardTab extends StatefulWidget {
-  const AdminDashboardTab({Key? key}) : super(key: key);
+  final void Function(int tabIndex)? onNavigate;
+  const AdminDashboardTab({Key? key, this.onNavigate}) : super(key: key);
 
   @override
   State<AdminDashboardTab> createState() => _AdminDashboardTabState();
@@ -57,6 +60,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                 icon: Icons.people,
                 color: Colors.blue,
                 isDark: isDark,
+                onTap: () => widget.onNavigate?.call(2),
               ),
               _buildStatCard(
                 title: 'Pending Leads',
@@ -65,6 +69,7 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                 icon: Icons.pending_actions,
                 color: Colors.amber,
                 isDark: isDark,
+                onTap: () => widget.onNavigate?.call(1),
               ),
               _buildStatCard(
                 title: 'Pending Payouts',
@@ -73,6 +78,10 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                 icon: Icons.payments,
                 color: Colors.redAccent,
                 isDark: isDark,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AdminPayoutsTab()),
+                ),
               ),
               _buildStatCard(
                 title: 'Total Commission',
@@ -81,6 +90,10 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
                 icon: Icons.account_balance_wallet,
                 color: Colors.greenAccent,
                 isDark: isDark,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const AdminCommissionTab()),
+                ),
               ),
             ],
           ),
@@ -295,49 +308,70 @@ class _AdminDashboardTabState extends State<AdminDashboardTab> {
     required IconData icon,
     required Color color,
     required bool isDark,
+    VoidCallback? onTap,
   }) {
-    return GlassCard(
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        splashColor: color.withValues(alpha: 0.15),
+        highlightColor: color.withValues(alpha: 0.08),
+        child: GlassCard(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? Colors.white60 : Colors.black54,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? Colors.white60 : Colors.black54,
+                      ),
+                    ),
+                  ),
+                  Icon(icon, color: color, size: 20),
+                ],
               ),
-              Icon(icon, color: color, size: 20),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
+                    children: [
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: isDark ? Colors.white38 : Colors.black38,
+                        ),
+                      ),
+                      if (onTap != null) ...[
+                        const SizedBox(width: 4),
+                        Icon(Icons.arrow_forward_ios, size: 8, color: color.withValues(alpha: 0.7)),
+                      ]
+                    ],
+                  ),
+                ],
+              )
             ],
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: isDark ? Colors.white38 : Colors.black38,
-                ),
-              ),
-            ],
-          )
-        ],
+        ),
       ),
     );
   }

@@ -131,31 +131,62 @@ class _ITManagerDashboardTabState extends State<ITManagerDashboardTab> {
               separatorBuilder: (_, _) => const Divider(color: Colors.white12, height: 1),
               itemBuilder: (context, index) {
                 final lead = allLeads[index];
-                return ListTile(
+                return InkWell(
                   onTap: () { widget.onNavigate?.call(1); },
-                  leading: const Icon(Icons.circle, color: Colors.purple, size: 12),
-                  title: Text(lead.serviceType, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
-                  subtitle: Text('${lead.customerName} - ${lead.details['Company Name'] ?? "No Company"}', style: const TextStyle(color: Colors.white54, fontSize: 11)),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text('Agent: User ${lead.agentCode}', style: const TextStyle(color: Colors.white70, fontSize: 11)),
-                          const Text('1 hour ago', style: TextStyle(color: Colors.white38, fontSize: 10)),
-                        ],
-                      ),
-                      const SizedBox(width: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
-                        child: Text(lead.status.name.replaceAll('Stage1', '').replaceAll('Stage2', ''), style: const TextStyle(color: Colors.orange, fontSize: 10)),
-                      ),
-                      const SizedBox(width: 8),
-                      const Icon(Icons.chevron_right, color: Colors.white54, size: 16),
-                    ],
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.circle, color: Colors.purple, size: 12),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                lead.serviceType,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${lead.customerName} - ${lead.details['Company Name'] ?? "No Company"}',
+                                style: const TextStyle(
+                                  color: Colors.white54,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text('Agent: User ${lead.agentCode}', style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                                const Text('1 hour ago', style: TextStyle(color: Colors.white38, fontSize: 10)),
+                              ],
+                            ),
+                            const SizedBox(width: 12),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(color: Colors.orange.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+                              child: Text(lead.status.name.replaceAll('Stage1', '').replaceAll('Stage2', ''), style: const TextStyle(color: Colors.orange, fontSize: 10)),
+                            ),
+                            const SizedBox(width: 8),
+                            const Icon(Icons.chevron_right, color: Colors.white54, size: 16),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },

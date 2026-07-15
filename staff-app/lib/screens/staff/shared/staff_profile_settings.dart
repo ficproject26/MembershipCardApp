@@ -15,7 +15,7 @@ class _StaffProfileSettingsTabState extends State<StaffProfileSettingsTab> {
   bool notif2 = true;
   bool notif3 = true;
   bool notif4 = true;
-  bool notif5 = false;
+  bool notif5 = true;
 
   @override
   Widget build(BuildContext context) {
@@ -83,16 +83,14 @@ class _StaffProfileSettingsTabState extends State<StaffProfileSettingsTab> {
                           const SizedBox(height: 16),
                           _buildInputField('Mobile', '9876543210', isDark),
                           const SizedBox(height: 16),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Expanded(child: _buildInputField('Password', '********', isDark, isPassword: true)),
-                              const SizedBox(width: 16),
-                              Padding(
-                                padding: const EdgeInsets.only(bottom: 12.0),
-                                child: Text('Change Password', style: TextStyle(color: isKyc ? primaryColor : Colors.blue, fontSize: 14)),
-                              )
-                            ],
+                          _buildInputField('Password', '********', isDark, isPassword: true),
+                          const SizedBox(height: 8),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: Padding(
+                              padding: const EdgeInsets.only(bottom: 12.0),
+                              child: Text('Change Password', style: TextStyle(color: isKyc ? primaryColor : Colors.blue, fontSize: 14)),
+                            ),
                           ),
                           const SizedBox(height: 32),
                           ElevatedButton(

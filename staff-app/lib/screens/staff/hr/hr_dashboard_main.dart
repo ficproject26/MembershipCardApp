@@ -241,42 +241,345 @@ class _HrDashboardMainState extends State<HrDashboardMain> {
 
   Widget _buildQuickActions() {
     final actions = [
-      {'icon': Icons.person_add, 'label': 'Add Candidate'},
-      {'icon': Icons.support_agent, 'label': 'Onboard Agent'},
-      {'icon': Icons.call, 'label': 'Follow Up'},
-      {'icon': Icons.analytics, 'label': 'Agent Reports'},
-      {'icon': Icons.work, 'label': 'Job Openings'},
+      {'icon': Icons.person_add, 'label': 'Add Candidate', 'key': 'add_candidate'},
+      {'icon': Icons.support_agent, 'label': 'Onboard Agent', 'key': 'onboard'},
+      {'icon': Icons.call, 'label': 'Follow Up', 'key': 'follow_up'},
+      {'icon': Icons.analytics, 'label': 'Agent Reports', 'key': 'reports'},
+      {'icon': Icons.work, 'label': 'Job Openings', 'key': 'jobs'},
     ];
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: actions.map((action) {
-          return Padding(
-            padding: const EdgeInsets.only(right: 12.0),
-            child: InkWell(
-              onTap: () {},
-              borderRadius: BorderRadius.circular(30),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                decoration: BoxDecoration(
-                  color: accentYellow,
-                  borderRadius: BorderRadius.circular(30),
-                  boxShadow: [
-                    BoxShadow(color: accentYellow.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 4)),
-                  ],
+    return Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: actions.map((action) {
+        return InkWell(
+          onTap: () {
+            final key = action['key'] as String;
+            if (key == 'add_candidate') {
+              _showAddCandidateSheet(context);
+            } else if (key == 'onboard') {
+              _showOnboardAgentSheet(context);
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('${action['label']} — coming soon!'),
+                  backgroundColor: accentYellow,
+                  behavior: SnackBarBehavior.floating,
                 ),
+              );
+            }
+          },
+          borderRadius: BorderRadius.circular(30),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            decoration: BoxDecoration(
+              color: accentYellow,
+              borderRadius: BorderRadius.circular(30),
+              boxShadow: [
+                BoxShadow(color: accentYellow.withValues(alpha: 0.3), blurRadius: 8, offset: const Offset(0, 4)),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(action['icon'] as IconData, size: 18, color: primaryDark),
+                const SizedBox(width: 8),
+                Text(action['label'] as String, style: TextStyle(color: primaryDark, fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  void _showAddCandidateSheet(BuildContext context) {
+    final formKey = GlobalKey<FormState>();
+    final nameCtrl = TextEditingController();
+    final emailCtrl = TextEditingController();
+    final phoneCtrl = TextEditingController();
+    final referralCtrl = TextEditingController();
+    bool isSubmitting = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => DraggableScrollableSheet(
+          initialChildSize: 0.85,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          builder: (_, scrollCtrl) => Container(
+            decoration: BoxDecoration(
+              color: cardDark,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+              children: [
+                // Handle bar
+                Container(
+                  margin: const EdgeInsets.only(top: 12),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+                ),
+                const SizedBox(height: 16),
+                // Title
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(color: accentYellow.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(12)),
+                        child: Icon(Icons.person_add, color: accentYellow, size: 24),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text('Add New Candidate', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 24),
+                  child: Text('Fill in the details to register a new agent candidate.', style: TextStyle(color: Colors.white54, fontSize: 13)),
+                ),
+                const SizedBox(height: 20),
+                Expanded(
+                  child: SingleChildScrollView(
+                    controller: scrollCtrl,
+                    padding: EdgeInsets.fromLTRB(24, 0, 24, MediaQuery.of(ctx).viewInsets.bottom + 24),
+                    child: Form(
+                      key: formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _sheetField('Full Name', nameCtrl, Icons.person_outline, 'e.g. Rajesh Kumar',
+                            validator: (v) => v == null || v.trim().isEmpty ? 'Name is required' : null),
+                          const SizedBox(height: 16),
+                          _sheetField('Email Address', emailCtrl, Icons.email_outlined, 'e.g. rajesh@example.com',
+                            keyboardType: TextInputType.emailAddress,
+                            validator: (v) {
+                              if (v == null || v.trim().isEmpty) return 'Email is required';
+                              if (!v.contains('@')) return 'Enter a valid email';
+                              return null;
+                            }),
+                          const SizedBox(height: 16),
+                          _sheetField('Phone Number', phoneCtrl, Icons.phone_outlined, 'e.g. 9876543210',
+                            keyboardType: TextInputType.phone,
+                            validator: (v) => v == null || v.trim().isEmpty ? 'Phone is required' : null),
+                          const SizedBox(height: 16),
+                          _sheetField('Referral Code (optional)', referralCtrl, Icons.card_giftcard_outlined, 'Referrer\'s agent code'),
+                          const SizedBox(height: 28),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: accentYellow,
+                                foregroundColor: primaryDark,
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                elevation: 0,
+                              ),
+                              icon: isSubmitting
+                                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
+                                  : const Icon(Icons.check_circle_outline),
+                              label: Text(isSubmitting ? 'Submitting…' : 'Add Candidate', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                              onPressed: isSubmitting ? null : () async {
+                                if (!formKey.currentState!.validate()) return;
+                                setSheetState(() => isSubmitting = true);
+                                try {
+                                  await AgentService().createAgent({
+                                    'name': nameCtrl.text.trim(),
+                                    'email': emailCtrl.text.trim(),
+                                    'phoneNumber': phoneCtrl.text.trim(),
+                                    'password': 'Welcome@123',
+                                    if (referralCtrl.text.trim().isNotEmpty) 'referredBy': referralCtrl.text.trim(),
+                                  });
+                                  if (ctx.mounted) Navigator.pop(ctx);
+                                  if (mounted) {
+                                    setState(() => _dashboardStatsFuture = StaffService().getHrDashboardStats());
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Candidate added successfully ✅'), backgroundColor: Colors.green),
+                                    );
+                                  }
+                                } catch (e) {
+                                  setSheetState(() => isSubmitting = false);
+                                  if (ctx.mounted) {
+                                    ScaffoldMessenger.of(ctx).showSnackBar(
+                                      SnackBar(content: Text('Failed to add candidate: $e'), backgroundColor: Colors.red),
+                                    );
+                                  }
+                                }
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _sheetField(String label, TextEditingController ctrl, IconData icon, String hint, {
+    TextInputType keyboardType = TextInputType.text,
+    String? Function(String?)? validator,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
+        const SizedBox(height: 6),
+        TextFormField(
+          controller: ctrl,
+          keyboardType: keyboardType,
+          validator: validator,
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: const TextStyle(color: Colors.white30, fontSize: 13),
+            prefixIcon: Icon(icon, color: Colors.white38, size: 20),
+            filled: true,
+            fillColor: primaryDark,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.white10)),
+            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: accentYellow, width: 1.5)),
+            errorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.red)),
+            focusedErrorBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Colors.red, width: 1.5)),
+            errorStyle: const TextStyle(color: Colors.redAccent),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showOnboardAgentSheet(BuildContext context) {
+    final steps = [
+      {'icon': Icons.person_add_alt_1, 'title': 'Register Candidate', 'desc': 'Tap "Add Candidate" to create their profile in the system.', 'done': true},
+      {'icon': Icons.verified_user_outlined, 'title': 'KYC Verification', 'desc': 'Ensure Aadhaar, PAN, and bank details are submitted and approved by the KYC team.', 'done': false},
+      {'icon': Icons.school_outlined, 'title': 'Training & Orientation', 'desc': 'Schedule product training and onboarding orientation session.', 'done': false},
+      {'icon': Icons.assignment_turned_in_outlined, 'title': 'Agreement Signing', 'desc': 'Get the agent agreement signed digitally or physically.', 'done': false},
+      {'icon': Icons.phone_android_outlined, 'title': 'App Access & Activation', 'desc': 'Share app login credentials. Confirm the agent can log in successfully.', 'done': false},
+      {'icon': Icons.leaderboard_outlined, 'title': 'First Lead Assignment', 'desc': 'Assign initial leads to get the agent started on the field.', 'done': false},
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.80,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (_, scrollCtrl) => Container(
+          decoration: BoxDecoration(
+            color: cardDark,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+              ),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Row(
                   children: [
-                    Icon(action['icon'] as IconData, size: 18, color: primaryDark),
-                    const SizedBox(width: 8),
-                    Text(action['label'] as String, style: TextStyle(color: primaryDark, fontWeight: FontWeight.bold)),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(color: accentYellow.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(12)),
+                      child: Icon(Icons.support_agent, color: accentYellow, size: 24),
+                    ),
+                    const SizedBox(width: 12),
+                    const Text('Onboard Agent', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ),
-            ),
-          );
-        }).toList(),
+              const SizedBox(height: 4),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24),
+                child: Text('Follow these steps to onboard a new field agent.', style: TextStyle(color: Colors.white54, fontSize: 13)),
+              ),
+              const SizedBox(height: 20),
+              Expanded(
+                child: ListView.separated(
+                  controller: scrollCtrl,
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+                  itemCount: steps.length,
+                  separatorBuilder: (_, __) => Padding(
+                    padding: const EdgeInsets.only(left: 26),
+                    child: Container(width: 2, height: 16, color: Colors.white10),
+                  ),
+                  itemBuilder: (_, i) {
+                    final step = steps[i];
+                    final isDone = step['done'] as bool;
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Column(
+                          children: [
+                            Container(
+                              width: 52,
+                              height: 52,
+                              decoration: BoxDecoration(
+                                color: isDone ? accentYellow.withValues(alpha: 0.15) : primaryDark,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: isDone ? accentYellow : Colors.white12, width: 1.5),
+                              ),
+                              child: Icon(step['icon'] as IconData, color: isDone ? accentYellow : Colors.white38, size: 24),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        'Step ${i + 1}: ${step['title']}',
+                                        style: TextStyle(
+                                          color: isDone ? accentYellow : Colors.white,
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    if (isDone)
+                                      const Icon(Icons.check_circle, color: Colors.green, size: 18),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(step['desc'] as String, style: const TextStyle(color: Colors.white54, fontSize: 13, height: 1.4)),
+                                const SizedBox(height: 12),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

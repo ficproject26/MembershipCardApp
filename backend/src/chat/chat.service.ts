@@ -21,6 +21,28 @@ export class ChatService {
     });
   }
 
+  async getRecentChats(userId: string) {
+    const messages = await this.prisma.message.findMany({
+      where: {
+        OR: [
+          { senderId: userId },
+          { receiverId: userId },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const recentChats = new Map<string, any>();
+    for (const msg of messages) {
+      const partnerId = msg.senderId === userId ? msg.receiverId : msg.senderId;
+      if (!recentChats.has(partnerId)) {
+        recentChats.set(partnerId, msg);
+      }
+    }
+    
+    return Array.from(recentChats.values());
+  }
+
   async saveMessage(data: {
     senderId: string;
     senderType: string;

@@ -60,5 +60,22 @@ class StaffService {
       throw Exception('Failed to load HR dashboard stats: ${e.message}');
     }
   }
+
+  Future<StaffModel> updateStaff(String id, Map<String, dynamic> data) async {
+    try {
+      final response = await _dio.patch('/staff/$id', data: data);
+      return StaffModel.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception('Failed to update staff: ${e.message}');
+    }
+  }
+
+  Future<void> deleteStaff(String id) async {
+    try {
+      await _dio.delete('/staff/$id');
+    } on DioException catch (e) {
+      throw Exception('Failed to delete staff: ${e.message}');
+    }
+  }
 }
 

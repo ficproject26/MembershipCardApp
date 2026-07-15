@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { Prisma } from '@prisma/client';
 
@@ -7,9 +7,16 @@ export class StaffService {
   constructor(private prisma: PrismaService) {}
 
   async create(data: Prisma.StaffCreateInput) {
-    return this.prisma.staff.create({
-      data,
-    });
+    try {
+      return await this.prisma.staff.create({
+        data,
+      });
+    } catch (error: any) {
+      if (error.code === 'P2002') {
+        throw new ConflictException('A staff member with this email or phone number already exists.');
+      }
+      throw error;
+    }
   }
 
   async findAll() {

@@ -178,7 +178,7 @@ class _LoanTlDashboardOverviewState extends State<LoanTlDashboardOverview> {
                           ),
                           DataCell(
                             ElevatedButton(
-                              onPressed: () {},
+                              onPressed: () => _showRequestDetails(context, req),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFFFFC107),
                                 foregroundColor: Colors.black,
@@ -468,6 +468,173 @@ class _LoanTlDashboardOverviewState extends State<LoanTlDashboardOverview> {
           ],
         ),
         Text(value, style: TextStyle(fontSize: 12, color: isDark ? Colors.white70 : Colors.black87)),
+      ],
+    );
+  }
+
+  void _showRequestDetails(BuildContext context, LeadModel req) {
+    final isDark = Provider.of<AppStateProvider>(context, listen: false).isDarkMode;
+    final cardBg = isDark ? const Color(0xFF1C2541) : Colors.white;
+    const yellow = Color(0xFFFFC107);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.85,
+        minChildSize: 0.5,
+        maxChildSize: 0.95,
+        builder: (_, scrollCtrl) => Container(
+          decoration: BoxDecoration(
+            color: cardBg,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(color: Colors.grey.withValues(alpha: 0.4), borderRadius: BorderRadius.circular(2)),
+              ),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: yellow.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.description_outlined, color: yellow, size: 22),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Request Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
+                          Text('Ref: ${req.id.substring(0, 8)}', style: TextStyle(fontSize: 12, color: isDark ? Colors.white54 : Colors.black54)),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: Colors.orange.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.orange.withValues(alpha: 0.4)),
+                      ),
+                      child: Text(req.status.name, style: const TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Divider(color: isDark ? Colors.white12 : Colors.black12),
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: scrollCtrl,
+                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Applicant Information', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: isDark ? Colors.white70 : Colors.black54)),
+                      const SizedBox(height: 12),
+                      _buildDetailRow('Name', req.customerName ?? 'N/A', isDark),
+                      const SizedBox(height: 10),
+                      _buildDetailRow('Phone', req.customerPhone ?? 'N/A', isDark),
+                      const SizedBox(height: 10),
+                      _buildDetailRow('Email', req.customerEmail ?? req.details['email'] ?? 'N/A', isDark),
+                      const SizedBox(height: 20),
+                      Text('Loan Details', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: isDark ? Colors.white70 : Colors.black54)),
+                      const SizedBox(height: 12),
+                      _buildDetailRow('Loan Type', req.details['Type of Loan'] ?? req.details['loanType'] ?? 'N/A', isDark),
+                      const SizedBox(height: 10),
+                      _buildDetailRow('Amount', req.details['Loan Amount'] ?? req.details['amount'] ?? 'N/A', isDark),
+                      const SizedBox(height: 10),
+                      _buildDetailRow('Agent', req.agentName ?? req.agentCode, isDark),
+                      const SizedBox(height: 10),
+                      _buildDetailRow('Date', '${req.dateCreated.day}/${req.dateCreated.month}/${req.dateCreated.year}', isDark),
+                      const SizedBox(height: 28),
+                      Text('Actions', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: isDark ? Colors.white70 : Colors.black54)),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.security, size: 18),
+                          label: const Text('Forward to KYC Team', style: TextStyle(fontWeight: FontWeight.bold)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF1976D2),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onPressed: () {
+                            Provider.of<AppStateProvider>(context, listen: false)
+                                .updateLeadStatus(req.id, 'KYC_Pending');
+                            Navigator.pop(ctx);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Request forwarded to KYC Team ✅'),
+                                backgroundColor: Color(0xFF1976D2),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          icon: const Icon(Icons.cancel_outlined, size: 18),
+                          label: const Text('Reject Request', style: TextStyle(fontWeight: FontWeight.bold)),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.red,
+                            side: const BorderSide(color: Colors.red),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onPressed: () {
+                            Provider.of<AppStateProvider>(context, listen: false)
+                                .updateLeadStatus(req.id, 'Rejected');
+                            Navigator.pop(ctx);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Request rejected'),
+                                backgroundColor: Colors.red,
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value, bool isDark) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 100,
+          child: Text(label, style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 13)),
+        ),
+        Expanded(
+          child: Text(value, style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.w500, fontSize: 13)),
+        ),
       ],
     );
   }

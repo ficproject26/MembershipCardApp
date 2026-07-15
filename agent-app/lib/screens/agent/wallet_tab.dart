@@ -480,50 +480,36 @@ class AgentWalletTab extends StatelessWidget {
                     String bankName = bankNameController.text.trim();
 
                     if (aadhaar.length != 12) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), content: Text('Error: Aadhaar Number must be exactly 12 digits.'), backgroundColor: Colors.red),
-                      );
+                      showDialog(context: context, builder: (c) => AlertDialog(title: const Text("Validation Error"), content: const Text('Aadhaar Number must be exactly 12 digits.'), actions: [TextButton(onPressed: () => Navigator.pop(c), child: const Text("OK"))]));
                       return;
                     }
                     if (pan.length != 10) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), content: Text('Error: PAN Card Number must be exactly 10 characters.'), backgroundColor: Colors.red),
-                      );
+                      showDialog(context: context, builder: (c) => AlertDialog(title: const Text("Validation Error"), content: const Text('PAN Card Number must be exactly 10 characters.'), actions: [TextButton(onPressed: () => Navigator.pop(c), child: const Text("OK"))]));
                       return;
                     }
                     
                     // Validate PAN format (5 letters, 4 numbers, 1 letter)
                     final panRegex = RegExp(r'^[A-Z]{5}[0-9]{4}[A-Z]{1}$');
                     if (!panRegex.hasMatch(pan)) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), content: Text('Error: Invalid PAN format (e.g. ABCDE1234F).'), backgroundColor: Colors.red),
-                      );
+                      showDialog(context: context, builder: (c) => AlertDialog(title: const Text("Validation Error"), content: const Text('Invalid PAN format (e.g. ABCDE1234F).'), actions: [TextButton(onPressed: () => Navigator.pop(c), child: const Text("OK"))]));
                       return;
                     }
 
                     if (bankAcc.length < 9) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), content: Text('Error: Bank Account Number is too short.'), backgroundColor: Colors.red),
-                      );
+                      showDialog(context: context, builder: (c) => AlertDialog(title: const Text("Validation Error"), content: const Text('Bank Account Number is too short.'), actions: [TextButton(onPressed: () => Navigator.pop(c), child: const Text("OK"))]));
                       return;
                     }
                     if (ifsc.length != 11) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), content: Text('Error: IFSC Code must be exactly 11 characters.'), backgroundColor: Colors.red),
-                      );
+                      showDialog(context: context, builder: (c) => AlertDialog(title: const Text("Validation Error"), content: const Text('IFSC Code must be exactly 11 characters.'), actions: [TextButton(onPressed: () => Navigator.pop(c), child: const Text("OK"))]));
                       return;
                     }
                     if (bankName.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), content: Text('Error: Please enter your Full Name as per Bank.'), backgroundColor: Colors.red),
-                      );
+                      showDialog(context: context, builder: (c) => AlertDialog(title: const Text("Validation Error"), content: const Text('Please enter your Full Name as per Bank.'), actions: [TextButton(onPressed: () => Navigator.pop(c), child: const Text("OK"))]));
                       return;
                     }
 
                     if (!isPhotoUploaded) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), content: Text('Error: Please upload an ID photo for verification.'), backgroundColor: Colors.red),
-                      );
+                      showDialog(context: context, builder: (c) => AlertDialog(title: const Text("Validation Error"), content: const Text('Please upload an ID photo for verification.'), actions: [TextButton(onPressed: () => Navigator.pop(c), child: const Text("OK"))]));
                       return;
                     }
 

@@ -12,7 +12,7 @@ class KycTeamDocumentsTab extends StatefulWidget {
 class _KycTeamDocumentsTabState extends State<KycTeamDocumentsTab> {
   String _selectedTab = 'Pending';
   LeadModel? _selectedDoc;
-  List<Map<String, dynamic>> _uploadedDocs = [];
+  List<KycDocument> _uploadedDocs = [];
   bool _isLoadingDocs = false;
 
   void _fetchDocumentsForLead(String leadId) async {
@@ -265,9 +265,9 @@ class _KycTeamDocumentsTabState extends State<KycTeamDocumentsTab> {
 
     final state = Provider.of<AppStateProvider>(context, listen: false);
 
-    Map<String, dynamic>? getDoc(String docType) {
+    KycDocument? getDoc(String docType) {
       try {
-        return _uploadedDocs.firstWhere((d) => d['docType'] == docType);
+        return _uploadedDocs.firstWhere((d) => d.docType == docType);
       } catch (_) {
         return null;
       }
@@ -290,7 +290,7 @@ class _KycTeamDocumentsTabState extends State<KycTeamDocumentsTab> {
       }
 
       final baseUrl = ApiClient.instance.options.baseUrl;
-      final fileUrl = '$baseUrl${doc['filePath']}';
+      final fileUrl = '$baseUrl${doc.filePath}';
 
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 12.0),
@@ -335,8 +335,8 @@ class _KycTeamDocumentsTabState extends State<KycTeamDocumentsTab> {
     final aadhaarFrontDoc = getDoc('aadhaar_front');
     final panDoc = getDoc('pan_card');
     
-    final aadhaarNumber = aadhaarFrontDoc?['aadhaarNumber'] ?? 'N/A';
-    final panNumber = panDoc?['panNumber'] ?? 'N/A';
+    final aadhaarNumber = aadhaarFrontDoc?.aadhaarNumber ?? 'N/A';
+    final panNumber = panDoc?.panNumber ?? 'N/A';
 
     return GlassCard(
       padding: const EdgeInsets.all(24),

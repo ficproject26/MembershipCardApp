@@ -16,6 +16,11 @@ export class ChatController {
     return this.chatService.getMessages(user1Id, user2Id);
   }
 
+  @Get('recent/:userId')
+  async getRecentChats(@Param('userId') userId: string) {
+    return this.chatService.getRecentChats(userId);
+  }
+
   @Post('media')
   @UseInterceptors(FileInterceptor('file', {
     storage: diskStorage({
