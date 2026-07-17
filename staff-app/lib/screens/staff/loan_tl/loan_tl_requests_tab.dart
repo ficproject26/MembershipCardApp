@@ -283,25 +283,44 @@ class _LoanTlRequestsTabState extends State<LoanTlRequestsTab> {
         children: [
           Text('Actions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
           const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                Provider.of<AppStateProvider>(context, listen: false).updateLeadStatus(_selectedRequest!.id, 'KYC_Pending');
-                setState(() {
-                  _selectedRequest = null;
-                });
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1976D2), // Blue
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          if (_selectedRequest!.status.name == 'Pending') ...[
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Provider.of<AppStateProvider>(context, listen: false).updateLeadStatus(_selectedRequest!.id, 'KYC_Pending');
+                  setState(() {
+                    _selectedRequest = null;
+                  });
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF1976D2), // Blue
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                child: const Text('Forward to KYC Team', style: TextStyle(fontWeight: FontWeight.bold)),
               ),
-              child: const Text('Forward to KYC Team', style: TextStyle(fontWeight: FontWeight.bold)),
             ),
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
+          ] else if (_selectedRequest!.status.name == 'KYC_Pending') ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.orange, size: 20),
+                  SizedBox(width: 12),
+                  Expanded(child: Text('This request is currently being processed by the KYC Team.', style: TextStyle(color: Colors.orange))),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
           SizedBox(
             width: double.infinity,
             child: OutlinedButton(

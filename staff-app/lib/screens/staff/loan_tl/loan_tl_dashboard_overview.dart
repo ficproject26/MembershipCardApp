@@ -45,10 +45,11 @@ class _LoanTlDashboardOverviewState extends State<LoanTlDashboardOverview> {
             builder: (context, state, child) {
               final allLeads = state.leads.where((l) => l.serviceType == 'Loan').toList();
               final pendingCount = allLeads.where((l) => l.status == LeadStatus.Pending).length;
-              final kycCount = allLeads.where((l) => l.status == LeadStatus.KYC_Pending).length;
-              final verifiedCount = allLeads.where((l) => l.status == LeadStatus.KYC_Verified).length;
-              final processedCount = allLeads.where((l) => l.status == LeadStatus.Approved || l.status == LeadStatus.Dispatched || l.status == LeadStatus.Process).length;
-              final rejectedCount = allLeads.where((l) => l.status == LeadStatus.Rejected || l.status == LeadStatus.KYC_Rejected).length;
+              final verifyCount = allLeads.where((l) => l.status == LeadStatus.Stage1Approved || l.status == LeadStatus.KYC_Pending || l.status == LeadStatus.KYC_Verified).length;
+              final bankCount = allLeads.where((l) => l.status == LeadStatus.Stage2Approved).length;
+              final approvedCount = allLeads.where((l) => l.status == LeadStatus.Stage3Approved || l.status == LeadStatus.Approved).length;
+              final disbursedCount = allLeads.where((l) => l.status == LeadStatus.Dispatched).length;
+              final rejectedCount = allLeads.where((l) => l.status == LeadStatus.Rejected || l.status == LeadStatus.KYC_Rejected || l.status == LeadStatus.Stage1Rejected || l.status == LeadStatus.Stage2Rejected || l.status == LeadStatus.Stage3Rejected).length;
 
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -59,11 +60,13 @@ class _LoanTlDashboardOverviewState extends State<LoanTlDashboardOverview> {
                         spacing: 16,
                         runSpacing: 16,
                         children: [
-                          _buildStatCard('Total Requests', '${allLeads.length}', Icons.description_outlined, Colors.blue, isDark, constraints.maxWidth, tabId: 'All'),
-                          _buildStatCard('Pending', '$pendingCount', Icons.pending_actions, Colors.orange, isDark, constraints.maxWidth, tabId: 'Pending'),
-                          _buildStatCard('With KYC Team', '$kycCount', Icons.security, const Color(0xFF9C27B0), isDark, constraints.maxWidth, tabId: 'With KYC'),
-                          _buildStatCard('Verified', '$verifiedCount', Icons.check_circle_outline, Colors.green, isDark, constraints.maxWidth, tabId: 'Verified'),
-                          _buildStatCard('Processed', '$processedCount', Icons.account_balance_wallet_outlined, Colors.cyan, isDark, constraints.maxWidth, tabId: 'Processed'),
+                          _buildStatCard('All', '${allLeads.length}', Icons.description_outlined, Colors.blue, isDark, constraints.maxWidth, tabId: 'All'),
+                          _buildStatCard('Pending', '$pendingCount', Icons.pending_actions, Colors.lightBlue, isDark, constraints.maxWidth, tabId: 'Pending'),
+                          _buildStatCard('Verify', '$verifyCount', Icons.security, Colors.amber, isDark, constraints.maxWidth, tabId: 'Verify'),
+                          _buildStatCard('Bank', '$bankCount', Icons.account_balance, Colors.orange, isDark, constraints.maxWidth, tabId: 'Bank'),
+                          _buildStatCard('Approved', '$approvedCount', Icons.check_circle_outline, Colors.green, isDark, constraints.maxWidth, tabId: 'Approved'),
+                          _buildStatCard('Disbursed', '$disbursedCount', Icons.monetization_on_outlined, Colors.teal, isDark, constraints.maxWidth, tabId: 'Disbursed'),
+                          _buildStatCard('Rejected', '$rejectedCount', Icons.cancel_outlined, Colors.red, isDark, constraints.maxWidth, tabId: 'Rejected'),
                         ],
                       );
                     },
@@ -77,11 +80,13 @@ class _LoanTlDashboardOverviewState extends State<LoanTlDashboardOverview> {
                       children: [
                         _buildTab('Pending ($pendingCount)', 'Pending', isDark),
                         const SizedBox(width: 24),
-                        _buildTab('With KYC Team ($kycCount)', 'With KYC', isDark),
+                        _buildTab('Verify ($verifyCount)', 'Verify', isDark),
                         const SizedBox(width: 24),
-                        _buildTab('Verified ($verifiedCount)', 'Verified', isDark),
+                        _buildTab('Bank ($bankCount)', 'Bank', isDark),
                         const SizedBox(width: 24),
-                        _buildTab('Processed ($processedCount)', 'Processed', isDark),
+                        _buildTab('Approved ($approvedCount)', 'Approved', isDark),
+                        const SizedBox(width: 24),
+                        _buildTab('Disbursed ($disbursedCount)', 'Disbursed', isDark),
                         const SizedBox(width: 24),
                         _buildTab('Rejected ($rejectedCount)', 'Rejected', isDark),
                       ],
@@ -152,10 +157,11 @@ class _LoanTlDashboardOverviewState extends State<LoanTlDashboardOverview> {
                     rows: Provider.of<AppStateProvider>(context).leads.where((l) {
                       if (l.serviceType != 'Loan') return false;
                       if (_selectedTab == 'Pending') return l.status == LeadStatus.Pending;
-                      if (_selectedTab == 'With KYC') return l.status == LeadStatus.KYC_Pending;
-                      if (_selectedTab == 'Verified') return l.status == LeadStatus.KYC_Verified;
-                      if (_selectedTab == 'Processed') return l.status == LeadStatus.Approved || l.status == LeadStatus.Dispatched || l.status == LeadStatus.Process;
-                      if (_selectedTab == 'Rejected') return l.status == LeadStatus.Rejected || l.status == LeadStatus.KYC_Rejected;
+                      if (_selectedTab == 'Verify') return l.status == LeadStatus.Stage1Approved || l.status == LeadStatus.KYC_Pending || l.status == LeadStatus.KYC_Verified;
+                      if (_selectedTab == 'Bank') return l.status == LeadStatus.Stage2Approved;
+                      if (_selectedTab == 'Approved') return l.status == LeadStatus.Stage3Approved || l.status == LeadStatus.Approved;
+                      if (_selectedTab == 'Disbursed') return l.status == LeadStatus.Dispatched;
+                      if (_selectedTab == 'Rejected') return l.status == LeadStatus.Rejected || l.status == LeadStatus.KYC_Rejected || l.status == LeadStatus.Stage1Rejected || l.status == LeadStatus.Stage2Rejected || l.status == LeadStatus.Stage3Rejected;
                       return true;
                     }).map((req) {
                       return DataRow(
@@ -562,32 +568,51 @@ class _LoanTlDashboardOverviewState extends State<LoanTlDashboardOverview> {
                       const SizedBox(height: 28),
                       Text('Actions', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: isDark ? Colors.white70 : Colors.black54)),
                       const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          icon: const Icon(Icons.security, size: 18),
-                          label: const Text('Forward to KYC Team', style: TextStyle(fontWeight: FontWeight.bold)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF1976D2),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      if (req.status.name == 'Pending') ...[
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            icon: const Icon(Icons.security, size: 18),
+                            label: const Text('Forward to KYC Team', style: TextStyle(fontWeight: FontWeight.bold)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF1976D2),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            onPressed: () {
+                              Provider.of<AppStateProvider>(context, listen: false)
+                                  .updateLeadStatus(req.id, 'KYC_Pending');
+                              Navigator.pop(ctx);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Request forwarded to KYC Team ✅'),
+                                  backgroundColor: Color(0xFF1976D2),
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            },
                           ),
-                          onPressed: () {
-                            Provider.of<AppStateProvider>(context, listen: false)
-                                .updateLeadStatus(req.id, 'KYC_Pending');
-                            Navigator.pop(ctx);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Request forwarded to KYC Team ✅'),
-                                backgroundColor: Color(0xFF1976D2),
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          },
                         ),
-                      ),
-                      const SizedBox(height: 12),
+                        const SizedBox(height: 12),
+                      ] else if (req.status.name == 'KYC_Pending') ...[
+                         Container(
+                           padding: const EdgeInsets.all(12),
+                           decoration: BoxDecoration(
+                             color: Colors.orange.withValues(alpha: 0.1),
+                             borderRadius: BorderRadius.circular(8),
+                             border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+                           ),
+                           child: const Row(
+                             children: [
+                               Icon(Icons.info_outline, color: Colors.orange, size: 20),
+                               SizedBox(width: 12),
+                               Expanded(child: Text('This request is currently being processed by the KYC Team.', style: TextStyle(color: Colors.orange))),
+                             ],
+                           ),
+                         ),
+                         const SizedBox(height: 12),
+                      ],
                       SizedBox(
                         width: double.infinity,
                         child: OutlinedButton.icon(
