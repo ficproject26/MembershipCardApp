@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared/shared.dart';
+import '../../utils/notification_utils.dart';
 
 class AgentWalletTab extends StatelessWidget {
   const AgentWalletTab({Key? key}) : super(key: key);
@@ -19,44 +20,159 @@ class AgentWalletTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Elegant Debit Card Style Wallet Widget
-          GlassCard(
-            padding: const EdgeInsets.all(20),
-            color: const Color(0xFFFFC107),
-            backgroundOpacity: 0.15,
+          // Premium Fintech Style Wallet Card
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF0F2027), Color(0xFF203A43), Color(0xFF2C5364)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 15,
+                  offset: const Offset(0, 8),
+                ),
+                BoxShadow(
+                  color: const Color(0xFF2C5364).withOpacity(0.2),
+                  blurRadius: 20,
+                  spreadRadius: -5,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+              border: Border.all(
+                color: Colors.white.withOpacity(0.1),
+                width: 1.5,
+              ),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'Forge Cash Wallet',
-                      style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white70, fontSize: 12),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.account_balance_wallet, color: Colors.white, size: 16),
+                        ),
+                        const SizedBox(width: 10),
+                        const Text(
+                          'FORGE CASH WALLET',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700, 
+                            color: Colors.white70, 
+                            fontSize: 11,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                      ],
                     ),
-                    const Icon(Icons.wifi, color: Colors.white70, size: 20),
+                    const Icon(Icons.contactless_outlined, color: Colors.white54, size: 22),
                   ],
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 24),
                 const Text(
-                  'AVAILABLE BALANCE',
-                  style: TextStyle(fontSize: 10, color: Colors.white60, fontWeight: FontWeight.bold),
+                  'Available Balance',
+                  style: TextStyle(fontSize: 13, color: Colors.white60, fontWeight: FontWeight.w500),
                 ),
-                Text(
-                  '₹${agent.walletBalance.toStringAsFixed(2)}',
-                  style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: Colors.white),
+                const SizedBox(height: 4),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    const Text(
+                      '₹',
+                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.w600, color: Color(0xFF4ADE80)),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      agent.walletBalance.toStringAsFixed(2),
+                      style: const TextStyle(
+                        fontSize: 36, 
+                        fontWeight: FontWeight.w900, 
+                        color: Colors.white,
+                        letterSpacing: -1,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 28),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(
-                      'AGENT: ${agent.agentCode}',
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white70),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'AGENT ID',
+                          style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white38, letterSpacing: 1.0),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          agent.agentCode,
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white, letterSpacing: 1.5),
+                        ),
+                      ],
                     ),
-                    Text(
-                      'KYC: ${agent.kycStatus.name}',
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white70),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: agent.kycStatus == KycStatus.Approved 
+                            ? const Color(0xFF4ADE80).withOpacity(0.15) 
+                            : agent.kycStatus == KycStatus.Pending
+                                ? Colors.amber.withOpacity(0.15)
+                                : Colors.redAccent.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: agent.kycStatus == KycStatus.Approved 
+                              ? const Color(0xFF4ADE80).withOpacity(0.3) 
+                              : agent.kycStatus == KycStatus.Pending
+                                  ? Colors.amber.withOpacity(0.3)
+                                  : Colors.redAccent.withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            agent.kycStatus == KycStatus.Approved 
+                                ? Icons.verified
+                                : agent.kycStatus == KycStatus.Pending
+                                    ? Icons.pending_actions
+                                    : Icons.error_outline,
+                            size: 12,
+                            color: agent.kycStatus == KycStatus.Approved 
+                                ? const Color(0xFF4ADE80)
+                                : agent.kycStatus == KycStatus.Pending
+                                    ? Colors.amber
+                                    : Colors.redAccent,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'KYC ${agent.kycStatus.name}',
+                            style: TextStyle(
+                              fontSize: 10, 
+                              fontWeight: FontWeight.bold, 
+                              color: agent.kycStatus == KycStatus.Approved 
+                                  ? const Color(0xFF4ADE80)
+                                  : agent.kycStatus == KycStatus.Pending
+                                      ? Colors.amber
+                                      : Colors.redAccent,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 )
@@ -77,20 +193,22 @@ class AgentWalletTab extends StatelessWidget {
                   ),
                   onPressed: () {
                     if (agent.kycStatus != KycStatus.Approved) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), 
-                          content: Text('Payout requires an APPROVED KYC status. Please submit KYC first.'),
-                          backgroundColor: Colors.redAccent,
-                        ),
+                      NotificationUtils.showPremiumAlert(
+                        context,
+                        title: 'KYC Required',
+                        message: 'Payout requires an APPROVED KYC status. Please submit your documents for verification.',
+                        actionLabel: 'Complete KYC',
+                        onAction: () {
+                          // TODO: Navigate to KYC screen
+                        },
                       );
                       return;
                     }
                     if (agent.walletBalance <= 0) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), 
-                          content: Text('Wallet balance is 0. Cannot withdraw.'),
-                          backgroundColor: Colors.redAccent,
-                        ),
+                      NotificationUtils.showPremiumAlert(
+                        context,
+                        title: 'Zero Balance',
+                        message: 'Your wallet balance is 0. You cannot initiate a withdrawal at this time.',
                       );
                       return;
                     }

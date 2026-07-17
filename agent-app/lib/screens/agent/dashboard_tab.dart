@@ -182,46 +182,70 @@ class _AgentDashboardTabState extends State<AgentDashboardTab>
                   children: [
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 6.0),
-                      child: _buildMembershipCard(
+                      child: _AnimatedPremiumCard(
                         tier: 'SILVER',
                         price: '₹999/yr',
                         features: ['Credit Card', 'Loan'],
-                        gradient: [const Color(0xFF6B7280), const Color(0xFF4B5563)],
+                        bgColors: [const Color(0xFF1F2937), const Color(0xFF111827)],
+                        accentGradient: [const Color(0xFFE5E7EB), const Color(0xFF9CA3AF)],
                         icon: '🥈',
                         isActive: agent.membership == MembershipTier.Silver,
+                        onTap: () => _showMembershipDetailsBottomSheet(
+                          context, 'SILVER', '₹999/yr', 
+                          ['Credit Card', 'Loan'], 
+                          [const Color(0xFFE5E7EB), const Color(0xFF9CA3AF)], '🥈'
+                        ),
                       ),
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 6.0),
-                      child: _buildMembershipCard(
+                      child: _AnimatedPremiumCard(
                         tier: 'GOLD',
                         price: '₹2,499/yr',
                         features: ['Credit Card', 'Loan', 'Jobs'],
-                        gradient: [const Color(0xFFD97706), const Color(0xFFB45309)],
+                        bgColors: [const Color(0xFF27272A), const Color(0xFF000000)],
+                        accentGradient: [const Color(0xFFFBBF24), const Color(0xFFD97706)],
                         icon: '🥇',
                         isActive: agent.membership == MembershipTier.Gold,
+                        onTap: () => _showMembershipDetailsBottomSheet(
+                          context, 'GOLD', '₹2,499/yr', 
+                          ['Credit Card', 'Loan', 'Jobs'], 
+                          [const Color(0xFFFBBF24), const Color(0xFFD97706)], '🥇'
+                        ),
                       ),
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 6.0),
-                      child: _buildMembershipCard(
+                      child: _AnimatedPremiumCard(
                         tier: 'DIAMOND',
                         price: '₹4,999/yr',
                         features: ['Credit Card', 'Loan', 'Jobs', 'Insurance'],
-                        gradient: [const Color(0xFF2563EB), const Color(0xFF1D4ED8)],
+                        bgColors: [const Color(0xFF0F172A), const Color(0xFF020617)],
+                        accentGradient: [const Color(0xFF60A5FA), const Color(0xFF2563EB)],
                         icon: '💎',
                         isActive: agent.membership == MembershipTier.Diamond,
+                        onTap: () => _showMembershipDetailsBottomSheet(
+                          context, 'DIAMOND', '₹4,999/yr', 
+                          ['Credit Card', 'Loan', 'Jobs', 'Insurance'], 
+                          [const Color(0xFF60A5FA), const Color(0xFF2563EB)], '💎'
+                        ),
                       ),
                     ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 6.0),
-                      child: _buildMembershipCard(
+                      child: _AnimatedPremiumCard(
                         tier: 'PLATINUM',
                         price: '₹9,999/yr',
                         features: ['All Services', 'IT Projects', 'BPO'],
-                        gradient: [const Color(0xFF7C3AED), const Color(0xFF6D28D9)],
+                        bgColors: [const Color(0xFF1E1B4B), const Color(0xFF09090B)],
+                        accentGradient: [const Color(0xFFC084FC), const Color(0xFF7C3AED)],
                         icon: '👑',
                         isActive: agent.membership == MembershipTier.Platinum,
+                        onTap: () => _showMembershipDetailsBottomSheet(
+                          context, 'PLATINUM', '₹9,999/yr', 
+                          ['All Services', 'IT Projects', 'BPO'], 
+                          [const Color(0xFFC084FC), const Color(0xFF7C3AED)], '👑'
+                        ),
                       ),
                     ),
                   ],
@@ -1460,247 +1484,595 @@ class _AgentDashboardTabState extends State<AgentDashboardTab>
     return commissions[serviceType] ?? '500';
   }
 
-  // ── MEMBERSHIP CARD ─────────────────────────────────────────────────────
-  Widget _buildMembershipCard({
-    required String tier,
-    required String price,
-    required List<String> features,
-    required List<Color> gradient,
-    required String icon,
-    required bool isActive,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: LinearGradient(
-          colors: gradient,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        border: isActive
-            ? Border.all(color: const Color(0xFFFFC107), width: 2.5)
-            : Border.all(color: Colors.white.withOpacity(0.15), width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: gradient.first.withOpacity(0.45),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-            spreadRadius: -2,
-          ),
-          BoxShadow(
-            color: gradient.last.withOpacity(0.3),
-            blurRadius: 40,
-            offset: const Offset(0, 20),
-            spreadRadius: -5,
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(20),
-        child: Stack(
-          children: [
-            // Decorative circles
-            Positioned(
-              top: -30,
-              right: -30,
-              child: Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.08),
-                ),
-              ),
+  // _buildMembershipCard is now handled by _AnimatedPremiumCard class below.
+
+  void _showMembershipDetailsBottomSheet(BuildContext context, String tier, String price, List<String> features, List<Color> gradient, String icon) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+          child: Container(
+            height: MediaQuery.of(context).size.height * 0.85,
+            decoration: BoxDecoration(
+              color: const Color(0xFF0F172A).withOpacity(0.85),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+              border: Border(top: BorderSide(color: Colors.white.withOpacity(0.15), width: 1.5)),
+              boxShadow: [
+                BoxShadow(color: gradient.first.withOpacity(0.2), blurRadius: 40, offset: const Offset(0, -10)),
+              ],
             ),
-            Positioned(
-              bottom: -40,
-              left: -20,
-              child: Container(
-                width: 100,
-                height: 100,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.05),
-                ),
-              ),
-            ),
-            // Shimmer accent line
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                height: 1.5,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.transparent,
-                      Colors.white.withOpacity(0.5),
-                      Colors.transparent,
-                    ],
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Handle bar
+                Center(
+                  child: Container(
+                    margin: const EdgeInsets.only(top: 12, bottom: 20),
+                    width: 40,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                 ),
-              ),
-            ),
-            // Card content
-            Padding(
-              padding: const EdgeInsets.all(18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Top row: Chip icon + Tier badge + Active
-                  Row(
-                    children: [
-                      // Card chip
-                      Container(
-                        width: 32,
-                        height: 24,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(4),
-                          gradient: LinearGradient(
-                            colors: [
-                              const Color(0xFFFFD700).withOpacity(0.9),
-                              const Color(0xFFDAA520).withOpacity(0.7),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          border: Border.all(color: const Color(0xFFB8860B).withOpacity(0.5), width: 0.5),
-                        ),
-                        child: Center(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: List.generate(3, (i) => Container(
-                              width: 1,
-                              height: 14,
-                              margin: const EdgeInsets.symmetric(horizontal: 2),
-                              color: const Color(0xFFB8860B).withOpacity(0.4),
-                            )),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Text(icon, style: const TextStyle(fontSize: 20)),
-                      const Spacer(),
-                      if (isActive)
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFC107),
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFFFFC107).withOpacity(0.4),
-                                blurRadius: 8,
-                                spreadRadius: 0,
+                
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Header
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                gradient: LinearGradient(colors: gradient),
+                                boxShadow: [
+                                  BoxShadow(color: gradient.first.withOpacity(0.5), blurRadius: 15, offset: const Offset(0, 5))
+                                ],
                               ),
+                              child: Text(icon, style: const TextStyle(fontSize: 28)),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    tier,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: 2.0,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: const Text('Premium Tier', style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
+                                  )
+                                ],
+                              ),
+                            )
+                          ],
+                        ),
+                        const SizedBox(height: 32),
+
+                        // Pricing & Validity
+                        Container(
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.white.withOpacity(0.08)),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('ANNUAL FEE', style: TextStyle(color: Colors.white54, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    price.replaceAll('/yr', ''),
+                                    style: const TextStyle(color: Colors.white, fontSize: 32, fontWeight: FontWeight.w900),
+                                  ),
+                                ],
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF4ADE80).withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: const Color(0xFF4ADE80).withOpacity(0.3)),
+                                ),
+                                child: const Row(
+                                  children: [
+                                    Icon(Icons.check_circle, color: Color(0xFF4ADE80), size: 16),
+                                    SizedBox(width: 6),
+                                    Text('Valid 1 Year', style: TextStyle(color: Color(0xFF4ADE80), fontWeight: FontWeight.bold, fontSize: 12)),
+                                  ],
+                                ),
+                              )
                             ],
                           ),
-                          child: const Text(
-                            'ACTIVE',
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 8,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 1.2,
+                        ),
+                        const SizedBox(height: 32),
+
+                        // Benefits Section
+                        const Text('MEMBERSHIP BENEFITS', style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+                        const SizedBox(height: 16),
+                        ...features.map((feature) {
+                          IconData iconData = Icons.star;
+                          if (feature.toLowerCase().contains('credit')) iconData = Icons.credit_card;
+                          if (feature.toLowerCase().contains('loan')) iconData = Icons.account_balance_wallet;
+                          if (feature.toLowerCase().contains('jobs')) iconData = Icons.work;
+                          if (feature.toLowerCase().contains('insurance')) iconData = Icons.health_and_safety;
+                          if (feature.toLowerCase().contains('bpo')) iconData = Icons.headset_mic;
+
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: gradient.last.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: gradient.first.withOpacity(0.3)),
+                                  ),
+                                  child: Icon(iconData, color: Colors.white, size: 20),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(feature, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                                      const SizedBox(height: 4),
+                                      Text('Unlock access to exclusive $feature services.', style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
+                          );
+                        }).toList(),
+                        
+                        const SizedBox(height: 16),
+
+                        // Earnings & Support
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF3B82F6).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: const Color(0xFF3B82F6).withOpacity(0.3)),
+                                ),
+                                child: const Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Icon(Icons.trending_up, color: Color(0xFF3B82F6), size: 24),
+                                    SizedBox(height: 12),
+                                    Text('Higher Earnings', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                                    SizedBox(height: 4),
+                                    Text('Get better commissions', style: TextStyle(color: Colors.white60, fontSize: 11)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF59E0B).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.3)),
+                                ),
+                                child: const Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Icon(Icons.support_agent, color: Color(0xFFF59E0B), size: 24),
+                                    SizedBox(height: 12),
+                                    Text('24/7 Support', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                                    SizedBox(height: 4),
+                                    Text('Priority assistance', style: TextStyle(color: Colors.white60, fontSize: 11)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  // Tier name - large
-                  Text(
-                    tier,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 3.0,
-                      shadows: [
-                        Shadow(
-                          color: Colors.black.withOpacity(0.3),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
+                        const SizedBox(height: 40),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  // Price
-                  Text(
-                    price,
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.85),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.5,
-                    ),
+                ),
+
+                // CTA Button
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0F172A),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withOpacity(0.5), blurRadius: 20, offset: const Offset(0, -5))
+                    ],
                   ),
-                  const Spacer(),
-                  // Features row - horizontal chips
-                  SizedBox(
-                    height: 22,
-                    child: ListView(
-                      scrollDirection: Axis.horizontal,
-                      physics: const NeverScrollableScrollPhysics(),
-                      children: features.take(4).map((f) => Container(
-                        margin: const EdgeInsets.only(right: 6),
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.white.withOpacity(0.2), width: 0.5),
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 18),
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ).copyWith(
+                      elevation: ButtonStyleButton.allOrNull(0.0),
+                    ),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Membership upgrade to $tier coming soon!'),
+                          backgroundColor: Colors.blueAccent,
+                          behavior: SnackBarBehavior.floating,
                         ),
+                      );
+                    },
+                    child: Ink(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(colors: gradient),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Container(
+                        alignment: Alignment.center,
+                        constraints: const BoxConstraints(minHeight: 56),
                         child: Text(
-                          f,
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.9),
-                            fontSize: 9,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      )).toList(),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  // Bottom: FIC branding
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'FIC MEMBERSHIP CLUB',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.5),
-                          fontSize: 8,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 2.0,
+                          'Upgrade to $tier',
+                          style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 1.0),
                         ),
                       ),
-                      // Card network icon
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.white.withOpacity(0.3)),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          tier[0],
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
-                            fontSize: 10,
-                            fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _AnimatedPremiumCard extends StatefulWidget {
+  final String tier;
+  final String price;
+  final List<String> features;
+  final List<Color> bgColors;
+  final List<Color> accentGradient;
+  final String icon;
+  final bool isActive;
+  final VoidCallback onTap;
+
+  const _AnimatedPremiumCard({
+    Key? key,
+    required this.tier,
+    required this.price,
+    required this.features,
+    required this.bgColors,
+    required this.accentGradient,
+    required this.icon,
+    required this.isActive,
+    required this.onTap,
+  }) : super(key: key);
+
+  @override
+  State<_AnimatedPremiumCard> createState() => _AnimatedPremiumCardState();
+}
+
+class _AnimatedPremiumCardState extends State<_AnimatedPremiumCard> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 150),
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.96).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => _controller.forward(),
+      onTapUp: (_) {
+        _controller.reverse();
+        widget.onTap();
+      },
+      onTapCancel: () => _controller.reverse(),
+      child: AnimatedBuilder(
+        animation: _scaleAnimation,
+        builder: (context, child) => Transform.scale(
+          scale: _scaleAnimation.value,
+          child: child,
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            gradient: LinearGradient(
+              colors: widget.bgColors,
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            border: Border.all(
+              color: widget.isActive ? widget.accentGradient.first.withOpacity(0.8) : Colors.white.withOpacity(0.08),
+              width: widget.isActive ? 1.5 : 1.0,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: widget.bgColors.last.withOpacity(0.6),
+                blurRadius: 30,
+                offset: const Offset(0, 15),
+              ),
+              if (widget.isActive)
+                BoxShadow(
+                  color: widget.accentGradient.first.withOpacity(0.2),
+                  blurRadius: 20,
+                  spreadRadius: 2,
+                ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: Stack(
+              children: [
+                // Glassmorphism subtle noise or glow
+                Positioned(
+                  top: -60,
+                  right: -40,
+                  child: Container(
+                    width: 200,
+                    height: 200,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          widget.accentGradient.first.withOpacity(0.15),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  bottom: -40,
+                  left: -20,
+                  child: Container(
+                    width: 150,
+                    height: 150,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: RadialGradient(
+                        colors: [
+                          widget.accentGradient.last.withOpacity(0.1),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                // Premium glass reflection
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: 100,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.white.withOpacity(0.1),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Top Row: Metallic Chip + Icon
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              // Metallic EMV Chip
+                              Container(
+                                width: 36,
+                                height: 26,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(6),
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFFE5E7EB), Color(0xFF9CA3AF), Color(0xFF4B5563)],
+                                    stops: [0.1, 0.5, 0.9],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 4, offset: const Offset(1, 2)),
+                                  ],
+                                  border: Border.all(color: Colors.white.withOpacity(0.4), width: 0.5),
+                                ),
+                                child: CustomPaint(
+                                  painter: _ChipPainter(),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Text(widget.icon, style: const TextStyle(fontSize: 22)),
+                            ],
                           ),
+                          if (widget.isActive)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(colors: widget.accentGradient),
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: widget.accentGradient.first.withOpacity(0.4),
+                                    blurRadius: 8,
+                                  ),
+                                ],
+                              ),
+                              child: const Text(
+                                'ACTIVE',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: 1.5,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 18),
+                      // Tier Name
+                      Text(
+                        widget.tier,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 4.0,
+                          shadows: [Shadow(color: Colors.black.withOpacity(0.5), blurRadius: 10, offset: const Offset(0, 4))],
                         ),
+                      ),
+                      const SizedBox(height: 4),
+                      // Price
+                      Text(
+                        widget.price,
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.7),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+                      const Spacer(),
+                      // Service Tags
+                      SizedBox(
+                        height: 24,
+                        child: ListView(
+                          scrollDirection: Axis.horizontal,
+                          physics: const NeverScrollableScrollPhysics(),
+                          children: widget.features.take(4).map((f) => Container(
+                            margin: const EdgeInsets.only(right: 8),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.white.withOpacity(0.1)),
+                            ),
+                            child: Center(
+                              child: Text(
+                                f,
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.8),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                          )).toList(),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      // Footer
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'PREMIUM MEMBERSHIP CLUB',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.4),
+                              fontSize: 9,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 2.0,
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.white.withOpacity(0.2)),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Icon(Icons.arrow_forward_ios, color: Colors.white.withOpacity(0.6), size: 10),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
+}
+
+class _ChipPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.black.withOpacity(0.2)
+      ..strokeWidth = 0.5
+      ..style = PaintingStyle.stroke;
+    
+    // Draw simple lines on the chip to look like real EMV contacts
+    canvas.drawLine(Offset(size.width * 0.3, 0), Offset(size.width * 0.3, size.height), paint);
+    canvas.drawLine(Offset(size.width * 0.7, 0), Offset(size.width * 0.7, size.height), paint);
+    canvas.drawLine(Offset(0, size.height * 0.35), Offset(size.width, size.height * 0.35), paint);
+    canvas.drawLine(Offset(0, size.height * 0.65), Offset(size.width, size.height * 0.65), paint);
+    canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(size.width * 0.4, size.height * 0.4, size.width * 0.2, size.height * 0.2), const Radius.circular(2)), paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

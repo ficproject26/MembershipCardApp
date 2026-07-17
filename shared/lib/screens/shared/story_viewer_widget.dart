@@ -25,6 +25,7 @@ class _StoryViewerWidgetState extends State<StoryViewerWidget> with SingleTicker
   late AnimationController _animationController;
   int _currentIndex = 0;
   bool _isMediaLoaded = false;
+  int _imageRetryCount = 0;
 
   @override
   void initState() {
@@ -42,12 +43,15 @@ class _StoryViewerWidgetState extends State<StoryViewerWidget> with SingleTicker
   void _startAnimation() {
     _animationController.stop();
     _animationController.reset();
-    _isMediaLoaded = false;
+    setState(() {
+      _isMediaLoaded = false;
+      _imageRetryCount = 0;
+    });
     
     final currentStatus = widget.statuses[_currentIndex];
     if (currentStatus.type == 'VIDEO') {
-      _animationController.duration = const Duration(seconds: 15);
-      // Will start animation when onReady is called
+      _animationController.duration = const Duration(seconds: 15); // Used as fallback or just required property
+      // Progress will be updated manually via onPositionChanged
     } else if (currentStatus.type == 'IMAGE') {
       _animationController.duration = const Duration(seconds: 5);
       // Will start animation when loadingBuilder reports loadingProgress == null
@@ -135,8 +139,16 @@ class _StoryViewerWidgetState extends State<StoryViewerWidget> with SingleTicker
       insetPadding: EdgeInsets.zero,
       child: GestureDetector(
         onTapDown: _onTapDown,
-        onLongPressStart: (_) => _animationController.stop(),
-        onLongPressEnd: (_) => _animationController.forward(),
+        onLongPressStart: (_) {
+          if (widget.statuses[_currentIndex].type != 'VIDEO' && _isMediaLoaded) {
+            _animationController.stop();
+          }
+        },
+        onLongPressEnd: (_) {
+          if (widget.statuses[_currentIndex].type != 'VIDEO' && _isMediaLoaded) {
+            _animationController.forward();
+          }
+        },
         child: Container(
           width: double.infinity,
           height: double.infinity,
@@ -154,6 +166,7 @@ class _StoryViewerWidgetState extends State<StoryViewerWidget> with SingleTicker
                     child: s.type == 'IMAGE' && s.mediaUrl != null
                       ? Image.network(
                           '$baseUrl${s.mediaUrl}', 
+                          key: ValueKey('$baseUrl${s.mediaUrl}_$_imageRetryCount'),
                           fit: BoxFit.contain,
                           loadingBuilder: (context, child, loadingProgress) {
                             if (loadingProgress == null) {
@@ -167,22 +180,43 @@ class _StoryViewerWidgetState extends State<StoryViewerWidget> with SingleTicker
                               }
                               return child;
                             }
+                            // Pause animation if network becomes slow
+                            if (index == _currentIndex && _isMediaLoaded) {
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                if (mounted) {
+                                  setState(() { _isMediaLoaded = false; });
+                                  _animationController.stop();
+                                }
+                              });
+                            }
                             return const Center(child: CircularProgressIndicator(color: Color(0xFFFFC107)));
                           },
                           errorBuilder: (context, error, stackTrace) {
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              if (mounted && index == _currentIndex && !_isMediaLoaded) {
-                                setState(() { _isMediaLoaded = true; });
-                                _animationController.forward();
-                              }
-                            });
-                            return const Center(
+                            if (index == _currentIndex) {
+                               WidgetsBinding.instance.addPostFrameCallback((_) {
+                                if (mounted && _animationController.isAnimating) {
+                                  _animationController.stop();
+                                }
+                              });
+                            }
+                            return Center(
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.broken_image, color: Colors.white54, size: 48),
-                                  SizedBox(height: 16),
-                                  Text('Image not found', style: TextStyle(color: Colors.white54)),
+                                  const Icon(Icons.broken_image, color: Colors.white54, size: 48),
+                                  const SizedBox(height: 16),
+                                  const Text('Image not found or failed to load', style: TextStyle(color: Colors.white54)),
+                                  const SizedBox(height: 16),
+                                  ElevatedButton.icon(
+                                    onPressed: () {
+                                      setState(() {
+                                        _imageRetryCount++;
+                                        _isMediaLoaded = false;
+                                      });
+                                    },
+                                    icon: const Icon(Icons.refresh),
+                                    label: const Text('Retry'),
+                                  )
                                 ],
                               ),
                             );
@@ -196,8 +230,29 @@ class _StoryViewerWidgetState extends State<StoryViewerWidget> with SingleTicker
                                 if (index == _currentIndex && !_isMediaLoaded) {
                                   if (mounted) {
                                     setState(() { _isMediaLoaded = true; });
-                                    _animationController.forward();
                                   }
+                                }
+                              },
+                              onBuffering: (isBuffering) {
+                                if (index == _currentIndex) {
+                                   if (mounted) {
+                                     setState(() { _isMediaLoaded = !isBuffering; });
+                                   }
+                                }
+                              },
+                              onPositionChanged: (progress) {
+                                if (index == _currentIndex && mounted) {
+                                  _animationController.value = progress;
+                                }
+                              },
+                              onFinished: () {
+                                if (index == _currentIndex && mounted) {
+                                  _animationController.value = 1.0;
+                                }
+                              },
+                              onError: () {
+                                if (index == _currentIndex && mounted) {
+                                  _animationController.stop();
                                 }
                               },
                             ),

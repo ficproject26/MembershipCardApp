@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/app_state_provider.dart';
 import '../../providers/chat_provider.dart';
+import '../../models/staff_model.dart';
 
 class BroadcastScreen extends StatefulWidget {
   final String currentUserId;

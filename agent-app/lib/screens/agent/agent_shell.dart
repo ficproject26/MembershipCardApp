@@ -198,10 +198,8 @@ class _AgentShellState extends State<AgentShell> {
         ),
       ),
       extendBodyBehindAppBar: false,
-      body: Container(
-        color: const Color(0xFF0C1017),
-        child: tabs[_currentIndex],
-      ),
+      backgroundColor: const Color(0xFF0C1017),
+      body: tabs[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (idx) {
