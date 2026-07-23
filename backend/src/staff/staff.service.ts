@@ -60,24 +60,29 @@ export class StaffService {
   }
 
   async getHrDashboardStats() {
-    const totalReferrals = await this.prisma.lead.count();
-    const pendingApplications = await this.prisma.lead.count({ where: { status: 'Pending' } });
-    const inProcess = await this.prisma.lead.count({ where: { status: 'In Process' } });
-    const selectedCandidates = await this.prisma.lead.count({ where: { status: 'Selected' } });
+    const hrServices = ['Jobs', 'Job', 'BPO Services', 'BPO'];
+    const serviceFilter = { serviceType: { in: hrServices } };
+
+    const totalReferrals = await this.prisma.lead.count({ where: serviceFilter });
+    const pendingApplications = await this.prisma.lead.count({ where: { AND: [serviceFilter, { status: 'Pending' }] } });
+    const inProcess = await this.prisma.lead.count({ where: { AND: [serviceFilter, { status: 'In Process' }] } });
+    const selectedCandidates = await this.prisma.lead.count({ where: { AND: [serviceFilter, { status: { in: ['Selected', 'Approved', 'Stage1Approved', 'Stage2Approved', 'Stage3Approved'] } }] } });
     
-    const appliedCount = await this.prisma.lead.count({ where: { status: 'Applied' } });
-    const screeningCount = await this.prisma.lead.count({ where: { status: 'Screening' } });
-    const interviewCount = await this.prisma.lead.count({ where: { status: 'Interview' } });
-    const joinedCount = await this.prisma.lead.count({ where: { status: 'Joined' } });
+    const appliedCount = await this.prisma.lead.count({ where: { AND: [serviceFilter, { status: 'Applied' }] } });
+    const screeningCount = await this.prisma.lead.count({ where: { AND: [serviceFilter, { status: 'Screening' }] } });
+    const interviewCount = await this.prisma.lead.count({ where: { AND: [serviceFilter, { status: 'Interview' }] } });
+    const joinedCount = await this.prisma.lead.count({ where: { AND: [serviceFilter, { status: 'Joined' }] } });
 
     const recentApplications = await this.prisma.lead.findMany({
-      take: 5,
+      where: serviceFilter,
+      take: 10,
       orderBy: { dateCreated: 'desc' },
       include: { agent: true }
     });
 
     const topAgentGroups = await this.prisma.lead.groupBy({
       by: ['agentId'],
+      where: serviceFilter,
       _count: { agentId: true },
       orderBy: { _count: { agentId: 'desc' } },
       take: 5,

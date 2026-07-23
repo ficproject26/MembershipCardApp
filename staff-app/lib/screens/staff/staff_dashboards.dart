@@ -136,7 +136,12 @@ class _HrDashboardState extends State<_HrDashboard> {
   @override
   Widget build(BuildContext context) {
     final state = Provider.of<AppStateProvider>(context);
-    final allJobsLeads = state.leads.where((l) => l.serviceType == 'Jobs').toList();
+    final allJobsLeads = state.leads.where((l) =>
+      l.serviceType == 'Jobs' ||
+      l.serviceType == 'Job' ||
+      l.serviceType == 'BPO Services' ||
+      l.serviceType.contains('BPO')
+    ).toList();
     
     // Stats
     final total = allJobsLeads.length;

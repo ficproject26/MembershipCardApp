@@ -58,8 +58,8 @@ class _StaffShellState extends State<StaffShell> {
     if (staff.role == StaffRole.hr) {
       tabs = [
         const HrDashboardMain(),
-        const Center(child: Text('Referrals View')),
-        const Center(child: Text('Leads View')),
+        StaffDashboardFactory.buildDashboardForRole(StaffRole.hr, isDark),
+        StaffDashboardFactory.buildDashboardForRole(StaffRole.hr, isDark),
         SharedMessagesTab(currentUserId: staff.id, currentUserName: staff.name, currentUserRole: 'Staff'),
         const StaffProfileSettingsTab(),
       ];
