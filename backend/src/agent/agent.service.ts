@@ -148,6 +148,19 @@ export class AgentService {
     return updated;
   }
 
+  async getAgentTransactions(idOrCode: string) {
+    const agent = await this.prisma.agent.findFirst({
+      where: { OR: [{ id: idOrCode }, { agentCode: idOrCode }] }
+    });
+    if (!agent) return [];
+
+    return this.prisma.transaction.findMany({
+      where: { agentId: agent.id },
+      orderBy: { date: 'desc' },
+      include: { agent: true },
+    });
+  }
+
   async remove(id: string) {
     const deleted = await this.prisma.agent.delete({
       where: { id },

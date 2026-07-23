@@ -237,6 +237,26 @@ class AgentWalletTab extends StatelessWidget {
               ],
             ],
           ),
+          const SizedBox(height: 16),
+          // View Commission History Action Button
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF10B981),
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 3,
+            ),
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (ctx) => CommissionHistoryModal(transactions: myTx, isDark: isDark),
+              );
+            },
+            icon: const Icon(Icons.history_edu, color: Colors.white),
+            label: const Text('📜 View Full Commission History', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+          ),
           const SizedBox(height: 24),
 
           // Transaction History list
@@ -655,6 +675,308 @@ class AgentWalletTab extends StatelessWidget {
           }
         );
       },
+    );
+  }
+}
+
+class CommissionHistoryModal extends StatefulWidget {
+  final List<TransactionModel> transactions;
+  final bool isDark;
+
+  const CommissionHistoryModal({Key? key, required this.transactions, required this.isDark}) : super(key: key);
+
+  @override
+  State<CommissionHistoryModal> createState() => _CommissionHistoryModalState();
+}
+
+class _CommissionHistoryModalState extends State<CommissionHistoryModal> {
+  String _searchQuery = '';
+  String _selectedService = 'All';
+
+  final List<String> _services = [
+    'All',
+    'Loan',
+    'Credit Card',
+    'Jobs',
+    'Insurance',
+    'IT Projects',
+    'BPO Services',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final commissionTxs = widget.transactions.where((t) =>
+      t.type == TransactionType.DirectCommission || t.type == TransactionType.IndirectCommission
+    ).toList();
+
+    double totalCommission = commissionTxs.fold(0.0, (sum, t) => sum + t.amount);
+
+    final filteredTxs = commissionTxs.where((t) {
+      if (_selectedService != 'All') {
+        final desc = t.description.toLowerCase();
+        final filterKey = _selectedService.toLowerCase();
+        if (!desc.contains(filterKey) && !t.description.contains(_selectedService)) {
+          return false;
+        }
+      }
+      if (_searchQuery.isNotEmpty) {
+        final q = _searchQuery.toLowerCase();
+        return t.description.toLowerCase().contains(q) || t.amount.toString().contains(q) || t.id.toLowerCase().contains(q);
+      }
+      return true;
+    }).toList();
+
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.85,
+      decoration: BoxDecoration(
+        color: widget.isDark ? const Color(0xFF161922) : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        children: [
+          const SizedBox(height: 12),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: widget.isDark ? Colors.white24 : Colors.grey[300],
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.history_edu, color: Color(0xFF10B981), size: 24),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Commission History',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: widget.isDark ? Colors.white : const Color(0xFF1A3B6E),
+                      ),
+                    ),
+                  ],
+                ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  color: widget.isDark ? Colors.white70 : Colors.black54,
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF059669), Color(0xFF10B981)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF10B981).withOpacity(0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'TOTAL COMMISSIONS EARNED',
+                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white70, letterSpacing: 1),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              '₹${totalCommission.toStringAsFixed(2)}',
+                              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.extrabold, color: Colors.white),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.payments, color: Colors.white, size: 28),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  TextField(
+                    style: TextStyle(color: widget.isDark ? Colors.white : Colors.black),
+                    decoration: InputDecoration(
+                      hintText: 'Search commission by customer, ID, or description...',
+                      hintStyle: TextStyle(color: widget.isDark ? Colors.white38 : Colors.black38),
+                      prefixIcon: Icon(Icons.search, color: widget.isDark ? Colors.white54 : Colors.black54),
+                      filled: true,
+                      fillColor: widget.isDark ? const Color(0xFF222634) : Colors.grey[100],
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                    onChanged: (val) => setState(() => _searchQuery = val),
+                  ),
+                  const SizedBox(height: 16),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: _services.map((service) {
+                        final isSelected = _selectedService == service;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8.0),
+                          child: FilterChip(
+                            selected: isSelected,
+                            label: Text(service),
+                            labelStyle: TextStyle(
+                              color: isSelected ? Colors.white : (widget.isDark ? Colors.white70 : Colors.black87),
+                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                              fontSize: 12,
+                            ),
+                            backgroundColor: widget.isDark ? const Color(0xFF222634) : Colors.grey[200],
+                            selectedColor: const Color(0xFF10B981),
+                            checkmarkColor: Colors.white,
+                            onSelected: (_) => setState(() => _selectedService = service),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Commission Records (${filteredTxs.length})',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: widget.isDark ? Colors.white : const Color(0xFF1A3B6E)),
+                  ),
+                  const SizedBox(height: 12),
+                  if (filteredTxs.isEmpty)
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32),
+                        child: Column(
+                          children: [
+                            Icon(Icons.request_quote, size: 48, color: widget.isDark ? Colors.white24 : Colors.black26),
+                            const SizedBox(height: 12),
+                            Text('No commission records match your filter.', style: TextStyle(color: widget.isDark ? Colors.white54 : Colors.black54)),
+                          ],
+                        ),
+                      ),
+                    )
+                  else
+                    ListView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: filteredTxs.length,
+                      itemBuilder: (context, idx) {
+                        final tx = filteredTxs[idx];
+                        IconData icon = Icons.payments;
+                        if (tx.description.contains('Loan')) icon = Icons.account_balance;
+                        else if (tx.description.contains('Credit Card')) icon = Icons.credit_card;
+                        else if (tx.description.contains('Job')) icon = Icons.work;
+                        else if (tx.description.contains('Insurance')) icon = Icons.verified_user;
+                        else if (tx.description.contains('IT')) icon = Icons.developer_board;
+                        else if (tx.description.contains('BPO')) icon = Icons.headset_mic;
+
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: widget.isDark ? const Color(0xFF222634) : Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: widget.isDark ? Colors.white10 : Colors.grey[200]!,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF10B981).withOpacity(0.15),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(icon, color: const Color(0xFF10B981), size: 22),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      tx.description,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        color: widget.isDark ? Colors.white : Colors.black87,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${tx.type.name} • ${tx.date.day}/${tx.date.month}/${tx.date.year} ${tx.date.hour}:${tx.date.minute.toString().padLeft(2, '0')}',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: widget.isDark ? Colors.white54 : Colors.black54,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Text(
+                                    '+ ₹${tx.amount.toStringAsFixed(2)}',
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF10B981),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.green.withOpacity(0.15),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      tx.status.name,
+                                      style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.green),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

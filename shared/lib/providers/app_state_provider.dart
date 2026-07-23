@@ -487,11 +487,25 @@ class AppStateProvider extends ChangeNotifier {
     try {
       _leads = await _leadService.getLeadsByAgent(agentId);
       _agents = await _agentService.getAllAgents();
+      await fetchAgentTransactions(agentId);
     } catch (e) {
       _error = e.toString();
     } finally {
       _isLoadingLeads = false;
       notifyListeners();
+    }
+  }
+
+  Future<void> fetchAgentTransactions(String agentIdOrCode) async {
+    try {
+      final response = await ApiClient.instance.get('/agent/$agentIdOrCode/transactions');
+      if (response.data is List) {
+        final txs = (response.data as List).map((e) => TransactionModel.fromJson(e)).toList();
+        _transactions = txs;
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Failed to fetch agent transactions: $e');
     }
   }
 

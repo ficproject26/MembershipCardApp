@@ -32,6 +32,11 @@ export class AgentController {
     return this.agentService.findOne(id);
   }
 
+  @Get(':id/transactions')
+  getTransactions(@Param('id') id: string) {
+    return this.agentService.getAgentTransactions(id);
+  }
+
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateAgentDto: UpdateAgentDto) {
     return this.agentService.update(id, updateAgentDto);
