@@ -741,7 +741,6 @@ class _TlLeadsDashboardState extends State<_TlLeadsDashboard> {
     final approvedLeads = allServiceLeads.where((l) =>
       l.status == LeadStatus.Approved ||
       l.status == LeadStatus.Dispatched ||
-      l.status == LeadStatus.Disbursed ||
       l.status == LeadStatus.Converted ||
       l.status == LeadStatus.Selected
     ).toList();
@@ -1114,6 +1113,9 @@ class _TlLeadsDashboardState extends State<_TlLeadsDashboard> {
             ),
         ],
       ),
+    );
+  }
+
   Widget _buildFilterCard(String title, String count, IconData icon, Color color, String tabName) {
     final isSelected = _selectedTab == tabName;
     return InkWell(
