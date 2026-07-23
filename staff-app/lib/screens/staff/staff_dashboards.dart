@@ -721,27 +721,51 @@ class _TlLeadsDashboard extends StatefulWidget {
 
 class _TlLeadsDashboardState extends State<_TlLeadsDashboard> {
   String _searchQuery = '';
+  String _selectedTab = 'Action Required'; // Options: 'All', 'Action Required', 'Approved', 'Rejected'
 
   @override
   Widget build(BuildContext context) {
     final state = Provider.of<AppStateProvider>(context);
-    final allLeads = state.leads;
+    final allServiceLeads = state.leads.where((l) => l.serviceType == widget.serviceType).toList();
 
-    // TL sees leads that match their serviceType and are in the workflow pipeline
-    final pendingLeads = allLeads.where((l) => 
-      l.serviceType == widget.serviceType &&
-      (l.status == LeadStatus.Pending || 
-       l.status == LeadStatus.Stage1Pending || 
-       l.status == LeadStatus.Stage1Approved || 
-       l.status == LeadStatus.Stage2Pending || 
-       l.status == LeadStatus.Stage2Approved || 
-       l.status == LeadStatus.Stage3Pending || 
-       l.status == LeadStatus.Stage3Approved ||
-       (l.serviceType == 'Loan' && l.status == LeadStatus.Approved))
+    final actionRequiredLeads = allServiceLeads.where((l) =>
+      l.status == LeadStatus.Pending || 
+      l.status == LeadStatus.Stage1Pending || 
+      l.status == LeadStatus.Stage1Approved || 
+      l.status == LeadStatus.Stage2Pending || 
+      l.status == LeadStatus.Stage2Approved || 
+      l.status == LeadStatus.Stage3Pending || 
+      l.status == LeadStatus.Stage3Approved
     ).toList();
 
+    final approvedLeads = allServiceLeads.where((l) =>
+      l.status == LeadStatus.Approved ||
+      l.status == LeadStatus.Dispatched ||
+      l.status == LeadStatus.Disbursed ||
+      l.status == LeadStatus.Converted ||
+      l.status == LeadStatus.Selected
+    ).toList();
+
+    final rejectedLeads = allServiceLeads.where((l) =>
+      l.status == LeadStatus.Rejected ||
+      l.status == LeadStatus.Stage1Rejected ||
+      l.status == LeadStatus.Stage2Rejected ||
+      l.status == LeadStatus.Stage3Rejected
+    ).toList();
+
+    List<LeadModel> baseList;
+    if (_selectedTab == 'Approved') {
+      baseList = approvedLeads;
+    } else if (_selectedTab == 'Rejected') {
+      baseList = rejectedLeads;
+    } else if (_selectedTab == 'All') {
+      baseList = allServiceLeads;
+    } else {
+      baseList = actionRequiredLeads;
+    }
+
     // Search filter
-    final displayedQueue = pendingLeads.where((l) {
+    final displayedQueue = baseList.where((l) {
       if (_searchQuery.isEmpty) return true;
       final query = _searchQuery.toLowerCase();
       final cName = (l.customerName ?? '').toLowerCase();
@@ -783,7 +807,23 @@ class _TlLeadsDashboardState extends State<_TlLeadsDashboard> {
               ),
             ],
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 24),
+          // Summary KPI Cards & Interactive Tabs
+          GridView.count(
+            crossAxisCount: MediaQuery.of(context).size.width > 900 ? 4 : (MediaQuery.of(context).size.width > 600 ? 4 : 2),
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 1.6,
+            children: [
+              _buildFilterCard('All', allServiceLeads.length.toString(), Icons.folder, Colors.blue, 'All'),
+              _buildFilterCard('Action Required', actionRequiredLeads.length.toString(), Icons.pending_actions, Colors.orange, 'Action Required'),
+              _buildFilterCard('Approved', approvedLeads.length.toString(), Icons.check_circle, Colors.green, 'Approved'),
+              _buildFilterCard('Rejected', rejectedLeads.length.toString(), Icons.cancel, Colors.red, 'Rejected'),
+            ],
+          ),
+          const SizedBox(height: 24),
           // Search Bar
           TextField(
             style: TextStyle(color: widget.isDark ? Colors.white : Colors.black),
@@ -801,9 +841,20 @@ class _TlLeadsDashboardState extends State<_TlLeadsDashboard> {
             onChanged: (val) => setState(() => _searchQuery = val),
           ),
           const SizedBox(height: 24),
-          Text(
-            'Action Required (${displayedQueue.length})',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: widget.isDark ? Colors.white : const Color(0xFF1A3B6E)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '$_selectedTab (${displayedQueue.length})',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: widget.isDark ? Colors.white : const Color(0xFF1A3B6E)),
+              ),
+              if (_selectedTab != 'All')
+                TextButton.icon(
+                  onPressed: () => setState(() => _selectedTab = 'All'),
+                  icon: const Icon(Icons.filter_list_off, size: 16),
+                  label: const Text('Show All', style: TextStyle(fontSize: 12)),
+                ),
+            ],
           ),
           const SizedBox(height: 16),
           if (displayedQueue.isEmpty)
@@ -812,9 +863,9 @@ class _TlLeadsDashboardState extends State<_TlLeadsDashboard> {
                 padding: const EdgeInsets.all(32.0),
                 child: Column(
                   children: [
-                    Icon(Icons.check_circle_outline, size: 64, color: Colors.green.withValues(alpha: 0.5)),
+                    Icon(Icons.inbox, size: 64, color: widget.isDark ? Colors.white24 : Colors.black26),
                     const SizedBox(height: 16),
-                    Text('No pending ${widget.serviceType} leads! Great job.', style: TextStyle(color: widget.isDark ? Colors.white70 : Colors.black87, fontSize: 16)),
+                    Text('No $_selectedTab ${widget.serviceType} applications found.', style: TextStyle(color: widget.isDark ? Colors.white70 : Colors.black87, fontSize: 16)),
                   ],
                 ),
               ),
@@ -826,10 +877,19 @@ class _TlLeadsDashboardState extends State<_TlLeadsDashboard> {
               itemCount: displayedQueue.length,
               itemBuilder: (context, index) {
                 final lead = displayedQueue[index];
+                final isApproved = approvedLeads.contains(lead);
+                final isRejected = rejectedLeads.contains(lead);
+
                 return Card(
                   color: widget.isDark ? const Color(0xFF1E212D) : Colors.white,
                   margin: const EdgeInsets.only(bottom: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: BorderSide(
+                      color: isApproved ? Colors.green.withValues(alpha: 0.4) : (isRejected ? Colors.red.withValues(alpha: 0.4) : Colors.transparent),
+                      width: 1.5,
+                    ),
+                  ),
                   elevation: 2,
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
@@ -849,35 +909,27 @@ class _TlLeadsDashboardState extends State<_TlLeadsDashboard> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
-                                color: Colors.orange.withValues(alpha: 0.2),
+                                color: isApproved ? Colors.green.withValues(alpha: 0.2) : (isRejected ? Colors.red.withValues(alpha: 0.2) : Colors.orange.withValues(alpha: 0.2)),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Builder(
                                 builder: (context) {
-                                  String badgeText = 'Pending';
-                                  if (lead.serviceType == 'Loan') {
-                                    if (lead.status == LeadStatus.Stage1Approved) {
-                                      badgeText = 'Doc Verification';
-                                    } else if (lead.status == LeadStatus.Stage2Approved) badgeText = 'Bank Processing';
-                                    else if (lead.status == LeadStatus.Approved) badgeText = 'Approved';
-                                  } else if (lead.serviceType == 'Insurance') {
-                                    if (lead.status == LeadStatus.Stage1Approved) {
-                                      badgeText = 'KYC Verification';
-                                    } else if (lead.status == LeadStatus.Stage2Approved) badgeText = 'Underwriting';
-                                    else if (lead.status == LeadStatus.Approved) badgeText = 'Active';
-                                  } else if (lead.serviceType == 'IT Projects') {
-                                    if (lead.status == LeadStatus.Stage1Approved) {
-                                      badgeText = 'Requirements';
-                                    } else if (lead.status == LeadStatus.Stage2Approved) badgeText = 'In Development';
-                                    else if (lead.status == LeadStatus.Stage3Approved) badgeText = 'Testing';
-                                    else if (lead.status == LeadStatus.Approved) badgeText = 'Delivered';
+                                  String badgeText = lead.status.name;
+                                  Color badgeColor = Colors.orange;
+
+                                  if (isApproved) {
+                                    badgeText = 'Approved';
+                                    badgeColor = Colors.green;
+                                  } else if (isRejected) {
+                                    badgeText = 'Rejected';
+                                    badgeColor = Colors.red;
+                                  } else if (lead.status.name.contains('Pending')) {
+                                    badgeText = lead.status.name.replaceAll('Stage1', 'Stage 1 ').replaceAll('Stage2', 'Stage 2 ').replaceAll('Stage3', 'Stage 3 ');
                                   }
-                                  else if (lead.status.name.contains('Pending')) badgeText = lead.status.name.replaceAll('Stage1', 'Stage 1 ').replaceAll('Stage2', 'Stage 2 ').replaceAll('Stage3', 'Stage 3 ');
-                                  else badgeText = lead.status.name;
 
                                   return Text(
                                     badgeText,
-                                    style: const TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.bold),
+                                    style: TextStyle(color: badgeColor, fontSize: 12, fontWeight: FontWeight.bold),
                                   );
                                 },
                               ),
@@ -1061,6 +1113,43 @@ class _TlLeadsDashboardState extends State<_TlLeadsDashboard> {
               },
             ),
         ],
+      ),
+  Widget _buildFilterCard(String title, String count, IconData icon, Color color, String tabName) {
+    final isSelected = _selectedTab == tabName;
+    return InkWell(
+      onTap: () => setState(() => _selectedTab = tabName),
+      borderRadius: BorderRadius.circular(16),
+      child: GlassCard(
+        padding: const EdgeInsets.all(12),
+        borderColor: isSelected ? color : Colors.transparent,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: color, size: 24),
+              const SizedBox(height: 6),
+              Text(
+                count,
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: widget.isDark ? Colors.white : const Color(0xFF1A3B6E),
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  color: isSelected ? color : (widget.isDark ? Colors.white70 : Colors.black54),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
