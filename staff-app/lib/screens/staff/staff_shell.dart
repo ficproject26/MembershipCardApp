@@ -100,7 +100,7 @@ class _StaffShellState extends State<StaffShell> {
       ];
     } else if (staff.role == StaffRole.loanTL) {
       tabs = [
-        const LoanTlDashboardOverview(),
+        LoanTlDashboardOverview(onNavigateToTab: (idx) => setState(() => _currentIndex = idx)),
         const LoanTlRequestsTab(),
         const LoanTlTasksTab(),
         const LoanTlReportsTab(),

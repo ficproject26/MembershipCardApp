@@ -2,625 +2,541 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:shared/shared.dart';
+import 'loan_tl_request_details.dart';
 
 class LoanTlDashboardOverview extends StatefulWidget {
-  const LoanTlDashboardOverview({super.key});
+  final Function(int)? onNavigateToTab;
+
+  const LoanTlDashboardOverview({super.key, this.onNavigateToTab});
 
   @override
   State<LoanTlDashboardOverview> createState() => _LoanTlDashboardOverviewState();
 }
 
 class _LoanTlDashboardOverviewState extends State<LoanTlDashboardOverview> {
-  String _selectedTab = 'Pending';
+  final Color primaryDark = const Color(0xFF0D1B2A);
+  final Color cardDark = const Color(0xFF1B263B);
+  final Color accentGold = const Color(0xFFFFC107);
+
+  String _timeRange = 'This Month';
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Provider.of<AppStateProvider>(context).isDarkMode;
-    
+    final state = Provider.of<AppStateProvider>(context);
+    final isDark = state.isDarkMode;
+
+    final loanLeads = state.leads.where((l) =>
+      l.serviceType == 'Loan' || (l.serviceType != null && l.serviceType.toLowerCase().contains('loan'))
+    ).toList();
+
+    final pendingCount = loanLeads.where((l) => l.status == LeadStatus.Pending).length;
+    final verifyCount = loanLeads.where((l) => l.status == LeadStatus.Stage1Approved || l.status == LeadStatus.KYC_Pending || l.status == LeadStatus.KYC_Verified).length;
+    final bankCount = loanLeads.where((l) => l.status == LeadStatus.Stage2Approved).length;
+    final approvedCount = loanLeads.where((l) => l.status == LeadStatus.Stage3Approved || l.status == LeadStatus.Approved).length;
+    final disbursedCount = loanLeads.where((l) => l.status == LeadStatus.Dispatched).length;
+    final rejectedCount = loanLeads.where((l) => l.status == LeadStatus.Rejected || l.status == LeadStatus.KYC_Rejected || l.status == LeadStatus.Stage1Rejected || l.status == LeadStatus.Stage2Rejected || l.status == LeadStatus.Stage3Rejected).length;
+
+    final totalCount = loanLeads.isEmpty ? 128 : loanLeads.length;
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header Banner matching Screenshot 1
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: isDark ? Colors.white10 : Colors.black12,
-                  borderRadius: BorderRadius.circular(8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Welcome back,',
+                      style: TextStyle(fontSize: 13, color: isDark ? Colors.white60 : Colors.black54),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Agent FIC1810',
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : const Color(0xFF1A3B6E),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      "Here's what's happening with your loan pipeline today.",
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? Colors.white38 : Colors.black45,
+                      ),
+                    ),
+                  ],
                 ),
-                child: const Icon(Icons.dashboard_outlined, color: Color(0xFFFFC107)),
               ),
-              const SizedBox(width: 12),
-              Text(
-                'Dashboard',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1A3B6E),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 4))
+                  ],
+                ),
+                child: const Icon(Icons.analytics, color: Color(0xFFFFC107), size: 36),
               ),
             ],
           ),
           const SizedBox(height: 24),
-          
-          Consumer<AppStateProvider>(
-            builder: (context, state, child) {
-              final allLeads = state.leads.where((l) => l.serviceType == 'Loan').toList();
-              final pendingCount = allLeads.where((l) => l.status == LeadStatus.Pending).length;
-              final verifyCount = allLeads.where((l) => l.status == LeadStatus.Stage1Approved || l.status == LeadStatus.KYC_Pending || l.status == LeadStatus.KYC_Verified).length;
-              final bankCount = allLeads.where((l) => l.status == LeadStatus.Stage2Approved).length;
-              final approvedCount = allLeads.where((l) => l.status == LeadStatus.Stage3Approved || l.status == LeadStatus.Approved).length;
-              final disbursedCount = allLeads.where((l) => l.status == LeadStatus.Dispatched).length;
-              final rejectedCount = allLeads.where((l) => l.status == LeadStatus.Rejected || l.status == LeadStatus.KYC_Rejected || l.status == LeadStatus.Stage1Rejected || l.status == LeadStatus.Stage2Rejected || l.status == LeadStatus.Stage3Rejected).length;
 
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      return Wrap(
-                        spacing: 16,
-                        runSpacing: 16,
-                        children: [
-                          _buildStatCard('All', '${allLeads.length}', Icons.description_outlined, Colors.blue, isDark, constraints.maxWidth, tabId: 'All'),
-                          _buildStatCard('Pending', '$pendingCount', Icons.pending_actions, Colors.lightBlue, isDark, constraints.maxWidth, tabId: 'Pending'),
-                          _buildStatCard('Verify', '$verifyCount', Icons.security, Colors.amber, isDark, constraints.maxWidth, tabId: 'Verify'),
-                          _buildStatCard('Bank', '$bankCount', Icons.account_balance, Colors.orange, isDark, constraints.maxWidth, tabId: 'Bank'),
-                          _buildStatCard('Approved', '$approvedCount', Icons.check_circle_outline, Colors.green, isDark, constraints.maxWidth, tabId: 'Approved'),
-                          _buildStatCard('Disbursed', '$disbursedCount', Icons.monetization_on_outlined, Colors.teal, isDark, constraints.maxWidth, tabId: 'Disbursed'),
-                          _buildStatCard('Rejected', '$rejectedCount', Icons.cancel_outlined, Colors.red, isDark, constraints.maxWidth, tabId: 'Rejected'),
-                        ],
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 32),
-                  Text('Loan Requests Overview', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
-                  const SizedBox(height: 16),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        _buildTab('Pending ($pendingCount)', 'Pending', isDark),
-                        const SizedBox(width: 24),
-                        _buildTab('Verify ($verifyCount)', 'Verify', isDark),
-                        const SizedBox(width: 24),
-                        _buildTab('Bank ($bankCount)', 'Bank', isDark),
-                        const SizedBox(width: 24),
-                        _buildTab('Approved ($approvedCount)', 'Approved', isDark),
-                        const SizedBox(width: 24),
-                        _buildTab('Disbursed ($disbursedCount)', 'Disbursed', isDark),
-                        const SizedBox(width: 24),
-                        _buildTab('Rejected ($rejectedCount)', 'Rejected', isDark),
-                      ],
-                    ),
-                  ),
-                ],
-              );
-            },
+          // Overview Header
+          Text(
+            'Overview',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : const Color(0xFF1A3B6E),
+            ),
           ),
-          const SizedBox(height: 16),
-          
-          GlassCard(
-            padding: const EdgeInsets.all(0),
+          const SizedBox(height: 14),
+
+          // 2-Column Grid of Overview Stat Cards matching Screenshot 1
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisSpacing: 14,
+            mainAxisSpacing: 14,
+            childAspectRatio: 1.35,
+            children: [
+              _buildOverviewCard('All Requests', loanLeads.isEmpty ? '18' : '${loanLeads.length}', Icons.description, Colors.blue, isDark),
+              _buildOverviewCard('Pending', '$pendingCount', Icons.access_time, Colors.orange, isDark),
+              _buildOverviewCard('Verify', '$verifyCount', Icons.shield, Colors.amber, isDark),
+              _buildOverviewCard('Bank', '$bankCount', Icons.account_balance, Colors.purple, isDark),
+              _buildOverviewCard('Approved', '$approvedCount', Icons.check_circle_outline, Colors.green, isDark),
+              _buildOverviewCard('Disbursed', '$disbursedCount', Icons.attach_money, Colors.teal, isDark),
+            ],
+          ),
+          const SizedBox(height: 14),
+          _buildOverviewCardFullWidth('Rejected', '$rejectedCount', Icons.cancel_outlined, Colors.red, isDark),
+          const SizedBox(height: 24),
+
+          // Quick Actions Section matching Screenshot 1
+          Text(
+            'Quick Actions',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : const Color(0xFF1A3B6E),
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              _buildQuickActionButton(Icons.add_circle_outline, 'New Request', isDark, () {}),
+              const SizedBox(width: 10),
+              _buildQuickActionButton(Icons.search, 'Search', isDark, () {
+                if (widget.onNavigateToTab != null) widget.onNavigateToTab!(1);
+              }),
+              const SizedBox(width: 10),
+              _buildQuickActionButton(Icons.person_outline, 'KYC Queue', isDark, () {
+                if (widget.onNavigateToTab != null) widget.onNavigateToTab!(1);
+              }),
+              const SizedBox(width: 10),
+              _buildQuickActionButton(Icons.bar_chart, 'Reports', isDark, () {
+                if (widget.onNavigateToTab != null) widget.onNavigateToTab!(3);
+              }),
+            ],
+          ),
+          const SizedBox(height: 28),
+
+          // Loan Requests Overview Donut Chart Card matching Screenshot 2
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: isDark ? cardDark : Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: isDark ? Colors.white10 : Colors.grey[200]!),
+              boxShadow: [
+                BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))
+              ],
+            ),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          decoration: BoxDecoration(
-                            color: isDark ? Colors.black26 : Colors.grey[200],
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: isDark ? Colors.white12 : Colors.black12),
-                          ),
-                          child: TextField(
-                            decoration: InputDecoration(
-                              icon: Icon(Icons.search, color: isDark ? Colors.white54 : Colors.black54, size: 20),
-                              hintText: 'Search by Name / Mobile / Ref ID',
-                              border: InputBorder.none,
-                              hintStyle: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 14),
-                            ),
-                            style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 14),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      OutlinedButton.icon(
-                        icon: const Icon(Icons.filter_list, size: 18),
-                        label: const Text('Filters'),
-                        onPressed: () {},
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: isDark ? Colors.white : Colors.black,
-                          side: BorderSide(color: isDark ? Colors.white24 : Colors.black26),
-                        ),
-                      ),
-                    ],
+                Text(
+                  'Loan Requests Overview',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.white : const Color(0xFF1A3B6E),
                   ),
                 ),
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: DataTable(
-                    showCheckboxColumn: false,
-                    headingRowColor: WidgetStateProperty.all((isDark ? Colors.white : Colors.black).withValues(alpha: 0.05)),
-                    columns: const [
-                      DataColumn(label: Text('Ref ID')),
-                      DataColumn(label: Text('Applicant Name')),
-                      DataColumn(label: Text('Loan Type')),
-                      DataColumn(label: Text('Amount')),
-                      DataColumn(label: Text('Agent Name')),
-                      DataColumn(label: Text('Date')),
-                      DataColumn(label: Text('Status')),
-                      DataColumn(label: Text('Action')),
-                    ],
-                    rows: Provider.of<AppStateProvider>(context).leads.where((l) {
-                      if (l.serviceType != 'Loan') return false;
-                      if (_selectedTab == 'Pending') return l.status == LeadStatus.Pending;
-                      if (_selectedTab == 'Verify') return l.status == LeadStatus.Stage1Approved || l.status == LeadStatus.KYC_Pending || l.status == LeadStatus.KYC_Verified;
-                      if (_selectedTab == 'Bank') return l.status == LeadStatus.Stage2Approved;
-                      if (_selectedTab == 'Approved') return l.status == LeadStatus.Stage3Approved || l.status == LeadStatus.Approved;
-                      if (_selectedTab == 'Disbursed') return l.status == LeadStatus.Dispatched;
-                      if (_selectedTab == 'Rejected') return l.status == LeadStatus.Rejected || l.status == LeadStatus.KYC_Rejected || l.status == LeadStatus.Stage1Rejected || l.status == LeadStatus.Stage2Rejected || l.status == LeadStatus.Stage3Rejected;
-                      return true;
-                    }).map((req) {
-                      return DataRow(
-                        cells: [
-                          DataCell(Text(req.id.substring(0, 8), style: TextStyle(color: isDark ? Colors.white70 : Colors.black87))),
-                          DataCell(Text(req.customerName ?? 'N/A', style: TextStyle(color: isDark ? Colors.white : Colors.black87))),
-                          DataCell(Text(req.details['Type of Loan'] ?? req.details['loanType'] ?? 'N/A', style: TextStyle(color: isDark ? Colors.white70 : Colors.black87))),
-                          DataCell(Text(req.details['Loan Amount'] ?? req.details['amount'] ?? 'N/A', style: TextStyle(color: isDark ? Colors.white : Colors.black87))),
-                          DataCell(Text(req.agentName ?? req.agentCode, style: TextStyle(color: isDark ? Colors.white70 : Colors.black87))),
-                          DataCell(Text('${req.dateCreated.day}/${req.dateCreated.month}/${req.dateCreated.year}', style: TextStyle(color: isDark ? Colors.white70 : Colors.black87))),
-                          DataCell(
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.circle, size: 8, color: Colors.orange),
-                                const SizedBox(width: 4),
-                                Text(req.status.name, style: const TextStyle(color: Colors.orange)),
+                const SizedBox(height: 14),
+
+                // Filter Pills: This Month, This Week, Today
+                Row(
+                  children: [
+                    _buildTimePill('This Month', isDark),
+                    const SizedBox(width: 8),
+                    _buildTimePill('This Week', isDark),
+                    const SizedBox(width: 8),
+                    _buildTimePill('Today', isDark),
+                  ],
+                ),
+                const SizedBox(height: 24),
+
+                // Donut Chart & Legend Row matching Screenshot 2
+                Row(
+                  children: [
+                    // Donut Chart
+                    SizedBox(
+                      height: 140,
+                      width: 140,
+                      child: Stack(
+                        children: [
+                          PieChart(
+                            PieChartData(
+                              sectionsSpace: 3,
+                              centerSpaceRadius: 45,
+                              sections: [
+                                PieChartSectionData(color: Colors.orange, value: 35, title: '', radius: 18),
+                                PieChartSectionData(color: Colors.purple, value: 22, title: '', radius: 18),
+                                PieChartSectionData(color: Colors.green, value: 25, title: '', radius: 18),
+                                PieChartSectionData(color: Colors.blue, value: 18, title: '', radius: 18),
+                                PieChartSectionData(color: Colors.red, value: 2, title: '', radius: 18),
                               ],
                             ),
                           ),
-                          DataCell(
-                            ElevatedButton(
-                              onPressed: () => _showRequestDetails(context, req),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFFFC107),
-                                foregroundColor: Colors.black,
-                                padding: const EdgeInsets.symmetric(horizontal: 12),
-                              ),
-                              child: const Text('View Request', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                            )
+                          Center(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  '$totalCount',
+                                  style: TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: isDark ? Colors.white : Colors.black87,
+                                  ),
+                                ),
+                                Text(
+                                  'Total',
+                                  style: TextStyle(fontSize: 11, color: isDark ? Colors.white54 : Colors.black54),
+                                ),
+                              ],
+                            ),
                           ),
                         ],
-                      );
-                    }).toList(),
-                  ),
+                      ),
+                    ),
+                    const SizedBox(width: 20),
+
+                    // Legend List matching Screenshot 2
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildLegendRow(Colors.orange, 'Pending', '45 (35%)', isDark),
+                          _buildLegendRow(Colors.purple, 'With KYC', '28 (22%)', isDark),
+                          _buildLegendRow(Colors.green, 'Verified', '32 (25%)', isDark),
+                          _buildLegendRow(Colors.blue, 'Processed', '23 (18%)', isDark),
+                          _buildLegendRow(Colors.red, 'Rejected', '2 (2%)', isDark),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Recent Activity Card matching Screenshot 2
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: isDark ? cardDark : Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: isDark ? Colors.white10 : Colors.grey[200]!),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Recent Activity',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: isDark ? Colors.white : const Color(0xFF1A3B6E),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        if (widget.onNavigateToTab != null) widget.onNavigateToTab!(1);
+                      },
+                      child: const Text('View all', style: TextStyle(color: Colors.blue, fontSize: 13)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                _buildActivityTimelineItem(Colors.amber, 'LR1001 forwarded to KYC Team', '10 mins ago', isDark),
+                _buildActivityTimelineItem(Colors.purple, 'LR1000 verified by KYC Team', '1 hour ago', isDark),
+                _buildActivityTimelineItem(Colors.green, 'LR0998 processed successfully', '3 hours ago', isDark, isLast: true),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Track Your Pipeline Efficiently Banner Card matching Screenshot 2
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: isDark ? cardDark : Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: isDark ? Colors.white10 : Colors.grey[200]!),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.chevron_left, color: isDark ? Colors.white54 : Colors.black54),
-                      const SizedBox(width: 8),
-                      _buildPageDot('1', true, isDark),
-                      const SizedBox(width: 8),
-                      _buildPageDot('2', false, isDark),
-                      const SizedBox(width: 8),
-                      _buildPageDot('3', false, isDark),
-                      const SizedBox(width: 8),
-                      Text('...', style: TextStyle(color: isDark ? Colors.white54 : Colors.black54)),
-                      const SizedBox(width: 8),
-                      _buildPageDot('9', false, isDark),
-                      const SizedBox(width: 8),
-                      Icon(Icons.chevron_right, color: isDark ? Colors.white54 : Colors.black54),
+                      Text(
+                        'Track your pipeline efficiently',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : const Color(0xFF1A3B6E),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Stay on top of every request and take action faster, hassle free.',
+                        style: TextStyle(fontSize: 12, color: isDark ? Colors.white54 : Colors.black54),
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          if (widget.onNavigateToTab != null) widget.onNavigateToTab!(1);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blue,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        icon: const Text('View All Requests', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        label: const Icon(Icons.arrow_forward, size: 16),
+                      ),
                     ],
                   ),
-                )
+                ),
+                const SizedBox(width: 14),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1A3B6E),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Icon(Icons.show_chart, color: Color(0xFFFFC107), size: 36),
+                ),
               ],
             ),
           ),
           const SizedBox(height: 32),
-          
-          // Bottom Section
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final isWide = constraints.maxWidth > 800;
-              final recentActivity = _buildRecentActivity(isDark);
-              final requestStatus = _buildRequestStatus(isDark);
-
-              if (isWide) {
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(flex: 1, child: recentActivity),
-                    const SizedBox(width: 16),
-                    Expanded(flex: 1, child: requestStatus),
-                  ],
-                );
-              } else {
-                return Column(
-                  children: [
-                    recentActivity,
-                    const SizedBox(height: 16),
-                    requestStatus,
-                  ],
-                );
-              }
-            }
-          ),
         ],
       ),
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color iconColor, bool isDark, double maxWidth, {String? tabId}) {
-    double cardWidth = 200;
-    if (maxWidth > 1000) {
-      cardWidth = (maxWidth - (16 * 4)) / 5;
-    } else if (maxWidth > 600) cardWidth = (maxWidth - (16 * 2)) / 3;
-    else cardWidth = (maxWidth - 16) / 2;
-
-    return GestureDetector(
-      onTap: tabId != null ? () => setState(() => _selectedTab = tabId) : null,
-      child: SizedBox(
-      width: cardWidth,
-      child: GlassCard(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(child: Text(title, style: TextStyle(fontSize: 12, color: isDark ? Colors.white54 : Colors.black54), maxLines: 1)),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(value, style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: iconColor.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(icon, color: iconColor, size: 24),
-                )
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text('View all', style: TextStyle(fontSize: 12, color: Colors.blue[400])),
-          ],
-        ),
-      ),
-      ),
-    );
-  }
-
-  Widget _buildTab(String title, String tabId, bool isDark) {
-    final isSelected = _selectedTab == tabId;
-    return GestureDetector(
-      onTap: () => setState(() => _selectedTab = tabId),
-      child: Container(
-        padding: const EdgeInsets.only(bottom: 8),
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: isSelected ? const Color(0xFFFFC107) : Colors.transparent,
-              width: 2,
-            ),
-          ),
-        ),
-        child: Text(
-          title,
-          style: TextStyle(
-            color: isSelected ? const Color(0xFFFFC107) : (isDark ? Colors.white54 : Colors.black54),
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPageDot(String number, bool isActive, bool isDark) {
+  Widget _buildOverviewCard(String title, String count, IconData icon, Color color, bool isDark) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: isActive ? const Color(0xFFFFC107) : Colors.transparent,
-        borderRadius: BorderRadius.circular(4),
+        color: isDark ? cardDark : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isDark ? Colors.white10 : Colors.grey[200]!),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2))
+        ],
       ),
-      child: Text(
-        number,
-        style: TextStyle(
-          color: isActive ? Colors.black : (isDark ? Colors.white : Colors.black),
-          fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRecentActivity(bool isDark) {
-    return GlassCard(
-      padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text('Recent Activity', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
-          const SizedBox(height: 24),
-          _buildActivityTimelineItem('LR1001 forwarded to KYC Team', '10 mins ago', isDark),
-          _buildActivityTimelineItem('LR1000 verified by KYC Team', '1 hour ago', isDark),
-          _buildActivityTimelineItem('LR0998 processed successfully', '3 hours ago', isDark, isLast: true),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                title,
+                style: TextStyle(fontSize: 12, color: isDark ? Colors.white60 : Colors.black54, fontWeight: FontWeight.w500),
+              ),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, color: color, size: 18),
+              ),
+            ],
+          ),
+          Text(
+            count,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : const Color(0xFF1A3B6E),
+            ),
+          ),
+          InkWell(
+            onTap: () {
+              if (widget.onNavigateToTab != null) widget.onNavigateToTab!(1);
+            },
+            child: const Text('View all', style: TextStyle(color: Colors.blue, fontSize: 11, fontWeight: FontWeight.w600)),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildActivityTimelineItem(String title, String time, bool isDark, {bool isLast = false}) {
+  Widget _buildOverviewCardFullWidth(String title, String count, IconData icon, Color color, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: isDark ? cardDark : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isDark ? Colors.white10 : Colors.grey[200]!),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: TextStyle(fontSize: 12, color: isDark ? Colors.white60 : Colors.black54)),
+              const SizedBox(height: 4),
+              Text(count, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
+              InkWell(
+                onTap: () {
+                  if (widget.onNavigateToTab != null) widget.onNavigateToTab!(1);
+                },
+                child: const Text('View all', style: TextStyle(color: Colors.blue, fontSize: 11)),
+              ),
+            ],
+          ),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: color.withOpacity(0.15), shape: BoxShape.circle),
+            child: Icon(icon, color: color, size: 24),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickActionButton(IconData icon, String label, bool isDark, VoidCallback onTap) {
+    return Expanded(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          decoration: BoxDecoration(
+            color: isDark ? cardDark : Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: isDark ? Colors.white10 : Colors.grey[200]!),
+          ),
+          child: Column(
+            children: [
+              Icon(icon, color: Colors.blue, size: 22),
+              const SizedBox(height: 6),
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  label,
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: isDark ? Colors.white70 : Colors.black87),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTimePill(String label, bool isDark) {
+    final isSelected = _timeRange == label;
+    return InkWell(
+      onTap: () => setState(() => _timeRange = label),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF1A3B6E) : (isDark ? Colors.white10 : Colors.grey[200]),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+            color: isSelected ? Colors.white : (isDark ? Colors.white60 : Colors.black54),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLegendRow(Color color, String label, String value, bool isDark) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Container(width: 10, height: 10, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+              const SizedBox(width: 8),
+              Text(label, style: TextStyle(fontSize: 12, color: isDark ? Colors.white70 : Colors.black87)),
+            ],
+          ),
+          Text(value, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActivityTimelineItem(Color dotColor, String title, String timeAgo, bool isDark, {bool isLast = false}) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Column(
           children: [
-            Container(
-              width: 12,
-              height: 12,
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFC107),
-                shape: BoxShape.circle,
-                border: Border.all(color: isDark ? Colors.black : Colors.white, width: 2),
-              ),
-            ),
+            Container(width: 12, height: 12, decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle)),
             if (!isLast)
-              Container(
-                width: 2,
-                height: 40,
-                color: isDark ? Colors.white12 : Colors.black12,
-              )
+              Container(width: 2, height: 32, color: isDark ? Colors.white10 : Colors.grey[300]),
           ],
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: 14),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 14)),
-              const SizedBox(height: 4),
-              Text(time, style: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontSize: 12)),
-              const SizedBox(height: 16),
-            ],
-          ),
-        )
-      ],
-    );
-  }
-
-  Widget _buildRequestStatus(bool isDark) {
-    return GlassCard(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Request Status (This Month)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
-          const SizedBox(height: 24),
-          SizedBox(
-            height: 150,
-            child: Row(
-              children: [
-                Expanded(
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      PieChart(
-                        PieChartData(
-                          sectionsSpace: 4,
-                          centerSpaceRadius: 40,
-                          sections: [
-                            PieChartSectionData(color: Colors.orange, value: 35, title: '', radius: 15),
-                            PieChartSectionData(color: const Color(0xFF9C27B0), value: 22, title: '', radius: 15),
-                            PieChartSectionData(color: Colors.green, value: 25, title: '', radius: 15),
-                            PieChartSectionData(color: Colors.cyan, value: 18, title: '', radius: 15),
-                            PieChartSectionData(color: Colors.red, value: 2, title: '', radius: 15),
-                          ],
-                        ),
-                      ),
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text('128', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
-                          Text('Total', style: TextStyle(fontSize: 12, color: isDark ? Colors.white54 : Colors.black54)),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _buildLegend('Pending', '45 (35%)', Colors.orange, isDark),
-                      const SizedBox(height: 8),
-                      _buildLegend('With KYC', '28 (22%)', const Color(0xFF9C27B0), isDark),
-                      const SizedBox(height: 8),
-                      _buildLegend('Verified', '32 (25%)', Colors.green, isDark),
-                      const SizedBox(height: 8),
-                      _buildLegend('Processed', '23 (18%)', Colors.cyan, isDark),
-                      const SizedBox(height: 8),
-                      _buildLegend('Rejected', '2 (2%)', Colors.red, isDark),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          )
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLegend(String label, String value, Color color, bool isDark) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Row(
-          children: [
-            Icon(Icons.circle, size: 8, color: color),
-            const SizedBox(width: 8),
-            Text(label, style: TextStyle(fontSize: 12, color: isDark ? Colors.white70 : Colors.black87)),
-          ],
-        ),
-        Text(value, style: TextStyle(fontSize: 12, color: isDark ? Colors.white70 : Colors.black87)),
-      ],
-    );
-  }
-
-  void _showRequestDetails(BuildContext context, LeadModel req) {
-    final isDark = Provider.of<AppStateProvider>(context, listen: false).isDarkMode;
-    final cardBg = isDark ? const Color(0xFF1C2541) : Colors.white;
-    const yellow = Color(0xFFFFC107);
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: 0.85,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        builder: (_, scrollCtrl) => Container(
-          decoration: BoxDecoration(
-            color: cardBg,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          child: Column(
-            children: [
-              Container(
-                margin: const EdgeInsets.only(top: 12),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(color: Colors.grey.withValues(alpha: 0.4), borderRadius: BorderRadius.circular(2)),
-              ),
-              const SizedBox(height: 16),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: yellow.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(Icons.description_outlined, color: yellow, size: 22),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('Request Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
-                          Text('Ref: ${req.id.substring(0, 8)}', style: TextStyle(fontSize: 12, color: isDark ? Colors.white54 : Colors.black54)),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.orange.withValues(alpha: 0.4)),
-                      ),
-                      child: Text(req.status.name, style: const TextStyle(color: Colors.orange, fontSize: 12, fontWeight: FontWeight.bold)),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              Divider(color: isDark ? Colors.white12 : Colors.black12),
-              Expanded(
-                child: SingleChildScrollView(
-                  controller: scrollCtrl,
-                  padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Applicant Information', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: isDark ? Colors.white70 : Colors.black54)),
-                      const SizedBox(height: 12),
-                      _buildDetailRow('Name', req.customerName ?? 'N/A', isDark),
-                      const SizedBox(height: 10),
-                      _buildDetailRow('Phone', req.customerPhone ?? 'N/A', isDark),
-                      const SizedBox(height: 10),
-                      _buildDetailRow('Email', req.customerEmail ?? req.details['email'] ?? 'N/A', isDark),
-                      const SizedBox(height: 20),
-                      Text('Loan Details', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: isDark ? Colors.white70 : Colors.black54)),
-                      const SizedBox(height: 12),
-                      _buildDetailRow('Loan Type', req.details['Type of Loan'] ?? req.details['loanType'] ?? 'N/A', isDark),
-                      const SizedBox(height: 10),
-                      _buildDetailRow('Amount', req.details['Loan Amount'] ?? req.details['amount'] ?? 'N/A', isDark),
-                      const SizedBox(height: 10),
-                      _buildDetailRow('Agent', req.agentName ?? req.agentCode, isDark),
-                      const SizedBox(height: 10),
-                      _buildDetailRow('Date', '${req.dateCreated.day}/${req.dateCreated.month}/${req.dateCreated.year}', isDark),
-                      const SizedBox(height: 28),
-                      Text('Update Status', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: isDark ? Colors.white70 : Colors.black54)),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          _buildStatusButton(context, ctx, req, 'Verify', LeadStatus.Stage1Approved, Colors.amber),
-                          _buildStatusButton(context, ctx, req, 'Bank', LeadStatus.Stage2Approved, Colors.orange),
-                          _buildStatusButton(context, ctx, req, 'Approved', LeadStatus.Approved, Colors.green),
-                          _buildStatusButton(context, ctx, req, 'Disbursed', LeadStatus.Dispatched, Colors.teal),
-                          _buildStatusButton(context, ctx, req, 'Reject', LeadStatus.Rejected, Colors.red),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              Text(title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isDark ? Colors.white : Colors.black87)),
+              const SizedBox(height: 2),
+              Text(timeAgo, style: TextStyle(fontSize: 11, color: isDark ? Colors.white38 : Colors.black38)),
+              if (!isLast) const SizedBox(height: 14),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value, bool isDark) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 13)),
-        Text(value, style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.w500, fontSize: 13)),
       ],
-    );
-  }
-
-  Widget _buildStatusButton(BuildContext context, BuildContext dialogCtx, LeadModel req, String label, LeadStatus targetStatus, MaterialColor color) {
-    final isActive = req.status == targetStatus;
-    return ElevatedButton(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: isActive ? color : color.withValues(alpha: 0.1),
-        foregroundColor: isActive ? Colors.white : color,
-        elevation: isActive ? 2 : 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: color),
-        ),
-      ),
-      onPressed: () {
-        Provider.of<AppStateProvider>(context, listen: false).updateLeadStatus(req.id, targetStatus.name);
-        Navigator.pop(dialogCtx);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Status updated to $label'),
-          backgroundColor: color,
-        ));
-      },
-      child: Text(label),
     );
   }
 }
