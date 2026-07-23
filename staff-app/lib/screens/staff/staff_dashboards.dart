@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared/shared.dart';
+import 'credit_card_tl/credit_card_tl_dashboard_overview.dart';
 
 class StaffDashboardFactory {
   static Widget buildDashboardForRole(StaffRole role, bool isDark) {
     switch (role) {
       case StaffRole.creditCardTL:
-        return _TlLeadsDashboard(title: 'Credit Card TL Dashboard', serviceType: 'Credit Card', isDark: isDark);
+        return const CreditCardTlDashboardOverview();
       case StaffRole.loanTL:
         return _TlLeadsDashboard(title: 'Loan TL Dashboard', serviceType: 'Loan', isDark: isDark);
       case StaffRole.insuranceTL:
