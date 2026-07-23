@@ -90,13 +90,13 @@ export class LeadService implements OnModuleInit {
     if (sType.includes('loan')) {
       if (['dispatched', 'disbursed'].includes(status)) shouldPay = true;
     } else if (sType.includes('credit')) {
-      if (['approved', 'stage1approved', 'stage2approved', 'stage3approved'].includes(status)) shouldPay = true;
+      if (['approved'].includes(status)) shouldPay = true;
     } else if (sType.includes('job')) {
       if (['converted', 'selected', 'approved', 'joined'].includes(status)) shouldPay = true;
     } else if (sType.includes('insur')) {
-      if (['approved', 'stage1approved', 'stage2approved', 'stage3approved', 'active'].includes(status)) shouldPay = true;
+      if (['approved', 'active'].includes(status)) shouldPay = true;
     } else if (sType.includes('it project') || sType.includes('it')) {
-      if (['delivered', 'stage2approved', 'stage3approved', 'approved', 'converted'].includes(status)) shouldPay = true;
+      if (['delivered', 'approved', 'converted'].includes(status)) shouldPay = true;
     } else if (sType.includes('bpo')) {
       if (['approved', 'converted', 'selected'].includes(status)) shouldPay = true;
     } else {
