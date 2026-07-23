@@ -673,6 +673,17 @@ class AppStateProvider extends ChangeNotifier {
   }
 
   Future<void> updateCommission(String service, double silver, double gold, double diamond, double platinum) async {
+    int idx = _commissions.indexWhere((c) => c.serviceType.toLowerCase() == service.toLowerCase());
+    if (idx != -1) {
+      _commissions[idx] = CommissionConfig(
+        serviceType: _commissions[idx].serviceType,
+        silverRate: silver,
+        goldRate: gold,
+        diamondRate: diamond,
+        platinumRate: platinum,
+      );
+      notifyListeners();
+    }
     try {
       await _commissionService.updateCommission(service, {
         'silverRate': silver,
