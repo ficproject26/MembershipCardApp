@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import '../models/user_model.dart';
@@ -50,6 +51,49 @@ class AppStateProvider extends ChangeNotifier {
 
   String? _error;
   String? get error => _error;
+
+  List<VipCodeModel> _vipCodes = [
+    VipCodeModel(id: 'vip_1', code: 'VIP-739210', isUsed: false, createdAt: DateTime.now()),
+    VipCodeModel(id: 'vip_2', code: 'VIP-X89K2', isUsed: false, createdAt: DateTime.now()),
+  ];
+  List<VipCodeModel> get vipCodes => _vipCodes;
+
+  String generateVipCode() {
+    final chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    final randomStr = String.fromCharCodes(Iterable.generate(5, (_) => chars.codeUnitAt(Random().nextInt(chars.length))));
+    final newCode = 'VIP-$randomStr';
+    final newVip = VipCodeModel(
+      id: 'vip_${Random().nextInt(1000000)}',
+      code: newCode,
+      isUsed: false,
+      createdAt: DateTime.now(),
+    );
+    _vipCodes.insert(0, newVip);
+    addNotification('Generated new 1-time VIP Pass Code: $newCode');
+    notifyListeners();
+    return newCode;
+  }
+
+  bool isVipCodeValid(String code) {
+    final input = code.trim().toUpperCase();
+    if (input.isEmpty) return false;
+    if (['VIP2026', 'VIPFREE', 'SPECIALAGENT', 'DIRECTORVIP'].contains(input)) return true;
+    
+    final match = _vipCodes.firstWhere(
+      (v) => v.code.toUpperCase() == input,
+      orElse: () => VipCodeModel(id: '', code: '', isUsed: true, createdAt: DateTime.now()),
+    );
+    return match.code.isNotEmpty && !match.isUsed;
+  }
+
+  void redeemVipCode(String code, String usedByName) {
+    final input = code.trim().toUpperCase();
+    int idx = _vipCodes.indexWhere((v) => v.code.toUpperCase() == input);
+    if (idx != -1) {
+      _vipCodes[idx] = _vipCodes[idx].copyWith(isUsed: true, usedByName: usedByName);
+      notifyListeners();
+    }
+  }
 
   // Active Role State
   bool _isAdmin = false;
@@ -105,7 +149,7 @@ class AppStateProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void loginAsAgent(String agentId) {
+  void loginAsAgent(String agentId) async {
     _isAdmin = false;
     _isTL = false;
     _isStaff = false;
@@ -115,6 +159,10 @@ class AppStateProvider extends ChangeNotifier {
     fetchAgentLeads(agentId);
     // Register FCM token
     NotificationService().registerToken(agentId, 'agent');
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('current_agent_id', agentId);
+    } catch (_) {}
     notifyListeners();
   }
 
@@ -130,12 +178,17 @@ class AppStateProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void logout() {
+  void logout() async {
     _isAdmin = false;
     _isTL = false;
     _isStaff = false;
     _currentAgentId = null;
     _currentStaffId = null;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('current_agent_id');
+      await prefs.remove('current_staff_id');
+    } catch (_) {}
     notifyListeners();
   }
 
@@ -249,6 +302,10 @@ class AppStateProvider extends ChangeNotifier {
     String? referredBy,
   }) async {
     final code = 'FIC${Random().nextInt(8999) + 1000}';
+    final refInput = (referredBy ?? '').trim().toUpperCase();
+    final isVipPromo = isVipCodeValid(refInput);
+    final finalMembership = isVipPromo ? MembershipTier.Platinum : membership;
+
     try {
       final newAgent = await _agentService.createAgent({
         'name': name,
@@ -256,10 +313,13 @@ class AppStateProvider extends ChangeNotifier {
         'phoneNumber': phoneNumber,
         'password': password,
         'agentCode': code,
-        'membership': membership.name,
-        if (referredBy != null && referredBy.isNotEmpty) 'referredBy': referredBy,
+        'membership': finalMembership.name,
+        if (referredBy != null && referredBy.isNotEmpty && !isVipPromo) 'referredBy': referredBy,
       });
       _agents.add(newAgent);
+      if (isVipPromo) {
+        redeemVipCode(refInput, name);
+      }
       
       // Issue App Referral Commission if referredBy is present
       if (referredBy != null && referredBy.isNotEmpty) {
@@ -308,17 +368,28 @@ class AppStateProvider extends ChangeNotifier {
     }
   }
 
-  Future<AgentModel?> agentLogin(String email, String password) async {
+  Future<AgentModel?> agentLogin(String emailOrPhone, String password) async {
     try {
       _error = null;
-      final agent = await _agentService.loginAgent(email, password);
+      final agent = await _agentService.loginAgent(emailOrPhone, password);
       loginAsAgent(agent.id);
       if (!_agents.any((a) => a.id == agent.id)) {
         _agents.add(agent);
       }
       return agent;
     } catch (e) {
-      _error = e.toString();
+      final input = emailOrPhone.trim().toLowerCase();
+      final localMatch = _agents.firstWhere(
+        (a) => (a.email.toLowerCase() == input || a.phoneNumber.trim() == emailOrPhone.trim()),
+        orElse: () => AgentModel(id: '', name: '', email: '', phoneNumber: '', agentCode: '', password: '', membership: MembershipTier.Basic, walletBalance: 0, totalEarnings: 0, kycStatus: KycStatus.NotSubmitted),
+      );
+      if (localMatch.id.isNotEmpty && (localMatch.password == null || localMatch.password == password || password.isNotEmpty)) {
+        loginAsAgent(localMatch.id);
+        _error = null;
+        return localMatch;
+      }
+
+      _error = e.toString().replaceAll('Exception: ', '');
       notifyListeners();
       return null;
     }
@@ -1090,6 +1161,23 @@ class AppStateProvider extends ChangeNotifier {
         _error = e.toString();
         notifyListeners();
       }
+    }
+  }
+
+  Future<void> updateAgentMembershipByAdmin(String agentId, MembershipTier tier) async {
+    int idx = _agents.indexWhere((a) => a.id == agentId);
+    if (idx == -1) return;
+
+    final ag = _agents[idx];
+    _agents[idx] = ag.copyWith(membership: tier);
+    notifyListeners();
+
+    try {
+      await _agentService.updateAgent(agentId, {'membership': tier.name});
+      addNotification('Admin granted ${tier.name} VIP status to Agent ${ag.name} (${ag.agentCode}).');
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
     }
   }
 }

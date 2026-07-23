@@ -10,34 +10,134 @@ class AdminMembershipTab extends StatelessWidget {
     final state = Provider.of<AppStateProvider>(context);
     final isDark = state.isDarkMode;
 
-    return ListView.builder(
+    return ListView(
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.all(16),
-      itemCount: state.pricings.length,
-      itemBuilder: (context, idx) {
-        final pricing = state.pricings[idx];
-        Color tierColor = Colors.grey;
+      children: [
+        // ── 1-TIME SINGLE-USE VIP CODE GENERATOR ────────────────────────────
+        GlassCard(
+          padding: const EdgeInsets.all(18),
+          borderColor: const Color(0xFFFFC107),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.vpn_key, color: Color(0xFFFFC107), size: 24),
+                      const SizedBox(width: 10),
+                      Text(
+                        '1-Time Single-Use VIP Pass Codes',
+                        style: TextStyle(
+                          color: isDark ? Colors.white : Colors.black87,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFC107)),
+                    icon: const Icon(Icons.add, color: Colors.black87, size: 18),
+                    label: const Text('Generate VIP Code', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 11)),
+                    onPressed: () {
+                      final newCode = state.generateVipCode();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Generated 1-Time VIP Pass Code: $newCode'),
+                          backgroundColor: Colors.green,
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Generate single-use VIP promo codes for special agents. Each code can be redeemed only 1 time for free Platinum membership.',
+                style: TextStyle(color: isDark ? Colors.white60 : Colors.black54, fontSize: 12),
+              ),
+              const SizedBox(height: 16),
+              if (state.vipCodes.isEmpty)
+                Text('No VIP codes generated yet.', style: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontSize: 12))
+              else
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: state.vipCodes.map((vip) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: vip.isUsed ? Colors.red.withOpacity(0.1) : const Color(0xFF10B981).withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: vip.isUsed ? Colors.red.withOpacity(0.3) : const Color(0xFF10B981).withOpacity(0.5)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(vip.isUsed ? Icons.check_circle : Icons.key, size: 16, color: vip.isUsed ? Colors.red : const Color(0xFF10B981)),
+                          const SizedBox(width: 6),
+                          SelectableText(
+                            vip.code,
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                              color: vip.isUsed ? Colors.red : (isDark ? Colors.white : Colors.black87),
+                              decoration: vip.isUsed ? TextDecoration.lineThrough : null,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: vip.isUsed ? Colors.red.withOpacity(0.2) : const Color(0xFF10B981).withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              vip.isUsed ? 'USED (${vip.usedByName ?? "Redeemed"})' : 'ACTIVE (1-TIME USE)',
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                color: vip.isUsed ? Colors.red : const Color(0xFF10B981),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+            ],
+          ),
+        ).marginOnly(bottom: 20),
 
-        switch (pricing.tier) {
-          case MembershipTier.Basic:
-            tierColor = Colors.grey;
-            break;
-          case MembershipTier.Silver:
-            tierColor = Colors.grey[400]!;
-            break;
-          case MembershipTier.Gold:
-            tierColor = Colors.amber;
-            break;
-          case MembershipTier.Diamond:
-            tierColor = Colors.cyanAccent;
-            break;
-          case MembershipTier.Platinum:
-            tierColor = const Color(0xFFE5E4E2);
-            break;
-        }
+        // ── MEMBERSHIP PRICING LIST ─────────────────────────────────────────
+        ...state.pricings.map((pricing) {
+          Color tierColor = Colors.grey;
 
-        final TextEditingController priceController =
-            TextEditingController(text: pricing.price.toStringAsFixed(0));
+          switch (pricing.tier) {
+            case MembershipTier.Basic:
+              tierColor = Colors.grey;
+              break;
+            case MembershipTier.Silver:
+              tierColor = Colors.grey[400]!;
+              break;
+            case MembershipTier.Gold:
+              tierColor = Colors.amber;
+              break;
+            case MembershipTier.Diamond:
+              tierColor = Colors.cyanAccent;
+              break;
+            case MembershipTier.Platinum:
+              tierColor = const Color(0xFFE5E4E2);
+              break;
+          }
+
+          final TextEditingController priceController =
+              TextEditingController(text: pricing.price.toStringAsFixed(0));
 
         return GlassCard(
           padding: const EdgeInsets.all(18),
@@ -229,8 +329,8 @@ class AdminMembershipTab extends StatelessWidget {
             ],
           ),
         ).marginOnly(bottom: 16);
-      },
-    );
+      }).toList(),
+    ]);
   }
 
   void _showAddBenefitDialog(BuildContext context, AppStateProvider state, MembershipTier tier) {

@@ -37,10 +37,11 @@ class AgentService {
     }
   }
 
-  Future<AgentModel> loginAgent(String email, String password) async {
+  Future<AgentModel> loginAgent(String emailOrPhone, String password) async {
     try {
       final response = await _dio.post('/agent/login', data: {
-        'email': email,
+        'email': emailOrPhone,
+        'emailOrPhone': emailOrPhone,
         'password': password,
       });
       return AgentModel.fromJson(response.data);

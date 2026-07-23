@@ -101,15 +101,6 @@ class _StaffLoginScreenState extends State<StaffLoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Align(
-                alignment: Alignment.centerRight,
-                child: IconButton(
-                  icon: const Icon(Icons.settings_outlined, color: Colors.white24, size: 20),
-                  tooltip: 'Demo Simulator Controls',
-                  onPressed: () => _showDemoBypassSheet(context, state),
-                ),
-              ),
-
               const SizedBox(height: 20),
 
               Row(
@@ -271,86 +262,5 @@ class _StaffLoginScreenState extends State<StaffLoginScreen> {
     );
   }
 
-  void _showDemoBypassSheet(BuildContext context, AppStateProvider state) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: inputColor,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) {
-        return Container(
-          padding: const EdgeInsets.all(20),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Developer Simulator Options', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-                    TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Close', style: TextStyle(color: goldColor))),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, padding: const EdgeInsets.symmetric(vertical: 12)),
-                  onPressed: () {
-                    state.loginAsTL();
-                    Navigator.pop(ctx);
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const tl.TLShell())); 
-                  },
-                  icon: const Icon(Icons.supervisor_account, color: Colors.white),
-                  label: const Text('Team Leader (TL) Portal', style: TextStyle(color: Colors.white)),
-                ),
-                const SizedBox(height: 12),
-                const Text('Or login as Staff:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
-                const SizedBox(height: 8),
-                SizedBox(
-                  height: 120,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: state.staff.length,
-                    separatorBuilder: (_, _) => const SizedBox(width: 12),
-                    itemBuilder: (c, idx) {
-                      final st = state.staff[idx];
-                      return GestureDetector(
-                        onTap: () {
-                          state.loginAsStaff(st.id);
-                          Navigator.pop(ctx);
-                          if (st.role == StaffRole.itProjectManager) {
-                            Navigator.push(context, MaterialPageRoute(builder: (_) => const ITProjectManagerShell()));
-                          } else {
-                            Navigator.push(context, MaterialPageRoute(builder: (_) => const StaffShell()));
-                          }
-                        },
-                        child: Container(
-                          width: 140,
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.04),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(st.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white)),
-                              Text(st.role.displayName, style: const TextStyle(fontSize: 10, color: Colors.blue, fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 4),
-                              Text(st.email, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 10, color: Colors.white54)),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
+}
 }

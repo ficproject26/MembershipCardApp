@@ -90,15 +90,6 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Align(
-                alignment: Alignment.centerRight,
-                child: IconButton(
-                  icon: const Icon(Icons.settings_outlined, color: Colors.white24, size: 20),
-                  tooltip: 'Demo Simulator Controls',
-                  onPressed: () => _showDemoBypassSheet(context, state),
-                ),
-              ),
-
               const SizedBox(height: 20),
 
               Row(
@@ -260,42 +251,5 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     );
   }
 
-  void _showDemoBypassSheet(BuildContext context, AppStateProvider state) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: inputColor,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) {
-        return Container(
-          padding: const EdgeInsets.all(20),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Developer Simulator Options', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-                    TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Close', style: TextStyle(color: goldColor))),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1A3B6E), padding: const EdgeInsets.symmetric(vertical: 12)),
-                  onPressed: () {
-                    state.loginAsAdmin();
-                    Navigator.pop(ctx);
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminShell()));
-                  },
-                  icon: const Icon(Icons.admin_panel_settings, color: Colors.white),
-                  label: const Text('System Admin Portal', style: TextStyle(color: Colors.white)),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
+}
 }

@@ -79,25 +79,7 @@ class _AgentDashboardTabState extends State<AgentDashboardTab>
       if (agent != null) {
         _pageController = PageController(viewportFraction: 0.9);
       }
-      // Start auto-cycling cards every 2 seconds
-      Future.delayed(const Duration(seconds: 2), _cycleCards);
     }
-  }
-
-  void _cycleCards() {
-    if (!mounted) return;
-    final nextPage = (_currentCardIndex + 1) % 4;
-    if (_pageController.hasClients) {
-      _pageController.animateToPage(
-        nextPage,
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeInOut,
-      );
-    }
-    setState(() {
-      _currentCardIndex = nextPage;
-    });
-    Future.delayed(const Duration(seconds: 2), _cycleCards);
   }
 
   void _cyclePromo() {
@@ -1074,7 +1056,8 @@ class _AgentDashboardTabState extends State<AgentDashboardTab>
                       ElevatedButton(
                         onPressed: () {
                           Navigator.pop(dialogCtx);
-                          // Placeholder for actual upgrade flow.
+                          final neededTier = (svc['tiers'] as List<MembershipTier>).first;
+                          _simulateRazorpayUpgrade(context, state, neededTier);
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFFFC107),
@@ -1737,14 +1720,14 @@ class _AgentDashboardTabState extends State<AgentDashboardTab>
                       elevation: ButtonStyleButton.allOrNull(0.0),
                     ),
                     onPressed: () {
-                      Navigator.pop(context);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Membership upgrade to $tier coming soon!'),
-                          backgroundColor: Colors.blueAccent,
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
+                      Navigator.pop(ctx);
+                      MembershipTier targetTier = MembershipTier.Silver;
+                      if (tier.toUpperCase() == 'GOLD') targetTier = MembershipTier.Gold;
+                      if (tier.toUpperCase() == 'DIAMOND') targetTier = MembershipTier.Diamond;
+                      if (tier.toUpperCase() == 'PLATINUM') targetTier = MembershipTier.Platinum;
+
+                      final state = Provider.of<AppStateProvider>(context, listen: false);
+                      _simulateRazorpayUpgrade(context, state, targetTier);
                     },
                     child: Ink(
                       decoration: BoxDecoration(
@@ -1764,6 +1747,55 @@ class _AgentDashboardTabState extends State<AgentDashboardTab>
                 ),
               ],
             ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _simulateRazorpayUpgrade(BuildContext context, AppStateProvider state, MembershipTier needed) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        Future.delayed(const Duration(seconds: 2), () {
+          if (!ctx.mounted) return;
+          state.upgradeAgentMembership(needed);
+          Navigator.pop(ctx);
+          if (!context.mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              behavior: SnackBarBehavior.floating,
+              width: 400,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              content: Text('Payment Successful! You are now a ${needed.name} Member!'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        });
+
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(
+                height: 48,
+                width: 48,
+                child: CircularProgressIndicator(color: Color(0xFF1A3B6E)),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Razorpay Gateway Loading...',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Completing secure transaction with FIC Membership Club',
+                style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
         );
       },

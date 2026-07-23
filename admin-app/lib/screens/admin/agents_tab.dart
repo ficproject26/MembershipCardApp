@@ -86,28 +86,38 @@ class AdminAgentsTab extends StatelessWidget {
                       ),
                     ],
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: agent.kycStatus == KycStatus.Approved
-                          ? Colors.green.withOpacity(0.15)
-                          : agent.kycStatus == KycStatus.Pending
-                              ? Colors.amber.withOpacity(0.15)
-                              : Colors.red.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      'KYC: ${agent.kycStatus.name}',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: agent.kycStatus == KycStatus.Approved
-                            ? Colors.green
-                            : agent.kycStatus == KycStatus.Pending
-                                ? Colors.amber
-                                : Colors.red,
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: agent.kycStatus == KycStatus.Approved
+                              ? Colors.green.withOpacity(0.15)
+                              : agent.kycStatus == KycStatus.Pending
+                                  ? Colors.amber.withOpacity(0.15)
+                                  : Colors.red.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          'KYC: ${agent.kycStatus.name}',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: agent.kycStatus == KycStatus.Approved
+                                ? Colors.green
+                                : agent.kycStatus == KycStatus.Pending
+                                    ? Colors.amber
+                                    : Colors.red,
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        icon: const Icon(Icons.workspace_premium, color: Color(0xFFFFC107), size: 22),
+                        tooltip: 'Grant VIP Pass / Upgrade Tier',
+                        onPressed: () => _showUpgradeAgentTierDialog(context, state, agent, isDark),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -124,6 +134,75 @@ class AdminAgentsTab extends StatelessWidget {
             ],
           ),
         ).marginOnly(bottom: 12);
+      },
+    );
+  }
+
+  void _showUpgradeAgentTierDialog(BuildContext context, AppStateProvider state, AgentModel agent, bool isDark) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          backgroundColor: isDark ? const Color(0xFF1E212D) : Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: Row(
+            children: [
+              const Icon(Icons.workspace_premium, color: Color(0xFFFFC107), size: 26),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Manage Tier: ${agent.name}',
+                  style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Current Tier: ${agent.membership.name}',
+                style: TextStyle(color: isDark ? Colors.white70 : Colors.black54, fontSize: 13, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              const Text('Grant VIP Pass or Select Tier:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 10),
+              ...MembershipTier.values.map((tier) {
+                final isSelected = agent.membership == tier;
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: ListTile(
+                    tileColor: isSelected ? const Color(0xFFFFC107).withOpacity(0.2) : (isDark ? Colors.white.withOpacity(0.05) : Colors.grey.withOpacity(0.1)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    title: Text(
+                      tier == MembershipTier.Platinum ? '👑 Platinum (VIP Free Pass)' : tier.name,
+                      style: TextStyle(fontWeight: FontWeight.bold, color: isSelected ? const Color(0xFFFFC107) : (isDark ? Colors.white : Colors.black87)),
+                    ),
+                    trailing: isSelected ? const Icon(Icons.check_circle, color: Color(0xFFFFC107)) : null,
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      state.updateAgentMembershipByAdmin(agent.id, tier);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          behavior: SnackBarBehavior.floating,
+                          content: Text('Agent ${agent.name} is now upgraded to ${tier.name} tier!'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    },
+                  ),
+                );
+              }).toList(),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+          ],
+        );
       },
     );
   }

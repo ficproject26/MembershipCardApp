@@ -14,12 +14,13 @@ export class AgentController {
 
   @Post('login')
   login(
-    @Body() body: { email: string; password?: string },
+    @Body() body: { email?: string; emailOrPhone?: string; password?: string },
     @Ip() ip: string,
     @Headers('x-forwarded-for') forwardedIp?: string
   ) {
     const clientIp = forwardedIp || ip || 'unknown';
-    return this.agentService.login(body.email, body.password, clientIp);
+    const identifier = body.emailOrPhone || body.email || '';
+    return this.agentService.login(identifier, body.password, clientIp);
   }
 
   @Get()

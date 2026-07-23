@@ -11,6 +11,7 @@ export 'models/transaction_model.dart';
 export 'models/user_model.dart';
 export 'models/hr_dashboard_model.dart';
 export 'models/kyc_document_model.dart';
+export 'models/vip_code_model.dart';
 
 // Services
 export 'services/api_client.dart';

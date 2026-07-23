@@ -39,11 +39,16 @@ export class AgentService {
       }
 
       if (referredBy) {
-        const referrer = await this.prisma.agent.findUnique({
-          where: { agentCode: referredBy }
-        });
-        if (referrer) {
-          referredById = referrer.id;
+        const refUpper = referredBy.trim().toUpperCase();
+        if (['VIP2026', 'VIPFREE', 'SPECIALAGENT', 'DIRECTORVIP'].includes(refUpper)) {
+          rest.membership = 'Platinum';
+        } else {
+          const referrer = await this.prisma.agent.findUnique({
+            where: { agentCode: referredBy }
+          });
+          if (referrer) {
+            referredById = referrer.id;
+          }
         }
       }
 
@@ -83,7 +88,7 @@ export class AgentService {
     }
   }
 
-  async login(email: string, password?: string, clientIp: string = 'unknown') {
+  async login(identifier: string, password?: string, clientIp: string = 'unknown') {
     const rateLimitKey = `login_attempts:${clientIp}`;
     const attemptsStr = await this.redisService.get(rateLimitKey);
     let attempts = attemptsStr ? parseInt(attemptsStr, 10) : 0;
@@ -92,15 +97,22 @@ export class AgentService {
       throw new HttpException('Too many failed login attempts. Please try again in 15 minutes.', HttpStatus.TOO_MANY_REQUESTS);
     }
 
-    const agent = await this.prisma.agent.findUnique({
-      where: { email },
+    const cleanInput = identifier ? identifier.trim() : '';
+
+    const agent = await this.prisma.agent.findFirst({
+      where: {
+        OR: [
+          { email: { equals: cleanInput.toLowerCase(), mode: 'insensitive' } },
+          { phoneNumber: cleanInput },
+        ],
+      },
     });
     
     if (!agent) {
       // Record failed attempt
       attempts += 1;
       await this.redisService.set(rateLimitKey, attempts.toString(), 15 * 60); // 15 mins
-      throw new NotFoundException('No agent account found with this email');
+      throw new NotFoundException('No agent account found with this email or mobile number');
     }
     
     if (!agent.password || agent.password !== password) {

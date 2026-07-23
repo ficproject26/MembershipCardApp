@@ -200,24 +200,21 @@ class _AgentLoginScreenState extends State<AgentLoginScreen> {
     final password = _passwordController.text.trim();
 
     if (emailOrPhone.isEmpty || password.isEmpty) {
-      _showErrorDialog('Missing Fields', 'Please enter your email and password.');
+      _showErrorDialog('Missing Fields', 'Please enter your email or mobile number and password.');
       return;
     }
 
-    if (emailOrPhone.contains('@')) {
-      final agent = await state.agentLogin(emailOrPhone, password);
-      if (agent != null) {
-        Navigator.push(context, MaterialPageRoute(builder: (_) => const AgentShell()));
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), content: Text('Welcome back, ${agent.name}!'), backgroundColor: Colors.green),
-        );
-        return;
-      } else {
-        _showErrorDialog('Login Failed', state.error ?? 'Invalid email or password.');
-        return;
-      }
+    final agent = await state.agentLogin(emailOrPhone, password);
+    if (agent != null) {
+      if (!mounted) return;
+      Navigator.push(context, MaterialPageRoute(builder: (_) => const AgentShell()));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), content: Text('Welcome back, ${agent.name}!'), backgroundColor: Colors.green),
+      );
+      return;
     } else {
-      _showErrorDialog('Invalid Input', 'Please login with your registered Email ID.');
+      _showErrorDialog('Login Failed', state.error ?? 'Invalid email or mobile number or password.');
+      return;
     }
   }
 
@@ -235,15 +232,6 @@ class _AgentLoginScreenState extends State<AgentLoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Developer / Demo bypass icon at the very top right (hidden in plain sight)
-              Align(
-                alignment: Alignment.centerRight,
-                child: IconButton(
-                  icon: const Icon(Icons.settings_outlined, color: Colors.white24, size: 20),
-                  tooltip: 'Demo Simulator Controls',
-                  onPressed: () => _showDemoBypassSheet(context, state),
-                ),
-              ),
-
               const SizedBox(height: 20),
 
               // Custom Logo
@@ -588,7 +576,51 @@ class _AgentLoginScreenState extends State<AgentLoginScreen> {
           ],
         ),
         const SizedBox(height: 16),
-        _buildDarkTextField(controller: _regReferralController, label: 'Referral Agent Code (Optional)', icon: Icons.group_add_outlined),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Referral / VIP Promo Code (Optional)', style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _regReferralController,
+              onChanged: (_) => setState(() {}),
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'Enter Referral Code or VIP Promo Code',
+                hintStyle: const TextStyle(color: Colors.white30, fontSize: 13),
+                prefixIcon: const Icon(Icons.group_add_outlined, color: Colors.white54),
+                filled: true,
+                fillColor: inputColor,
+                contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: borderColor)),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: goldColor)),
+              ),
+            ),
+            if (state.isVipCodeValid(_regReferralController.text.trim())) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10B981).withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFF10B981)),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.workspace_premium, color: Color(0xFF10B981), size: 20),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        '🌟 1-Time VIP Pass Recognized! Free Platinum Access Unlocked (₹0)',
+                        style: TextStyle(color: Color(0xFF10B981), fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
         const SizedBox(height: 24),
 
         const SizedBox(height: 32),
@@ -740,71 +772,5 @@ class _AgentLoginScreenState extends State<AgentLoginScreen> {
     }
   }
 
-  void _showDemoBypassSheet(BuildContext context, AppStateProvider state) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: inputColor,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) {
-        return Container(
-          padding: const EdgeInsets.all(20),
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Developer Simulator Options', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
-                    TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Close', style: TextStyle(color: goldColor))),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                const Text('Quickly login as Agent:', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
-                const SizedBox(height: 8),
-                SizedBox(
-                  height: 120,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: state.agents.length,
-                    separatorBuilder: (_, __) => const SizedBox(width: 12),
-                    itemBuilder: (c, idx) {
-                      final ag = state.agents[idx];
-                      return GestureDetector(
-                        onTap: () {
-                          state.loginAsAgent(ag.id);
-                          Navigator.pop(ctx);
-                          Navigator.push(context, MaterialPageRoute(builder: (_) => const AgentShell()));
-                        },
-                        child: Container(
-                          width: 140,
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.04),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: goldColor.withOpacity(0.2)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(ag.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white)),
-                              Text(ag.membership.name, style: TextStyle(fontSize: 10, color: goldColor, fontWeight: FontWeight.bold)),
-                              const SizedBox(height: 4),
-                              Text(ag.agentCode, style: const TextStyle(fontSize: 10, color: Colors.white54)),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
+}
 }

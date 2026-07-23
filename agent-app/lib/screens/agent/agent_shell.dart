@@ -6,6 +6,7 @@ import 'services_tab.dart';
 import 'wallet_tab.dart';
 import 'share_tab.dart';
 import 'training_tab.dart';
+import 'profile_tab.dart';
 
 class AgentShell extends StatefulWidget {
   const AgentShell({Key? key}) : super(key: key);
@@ -73,7 +74,7 @@ class _AgentShellState extends State<AgentShell> {
       const AgentWalletTab(),
       const AgentShareTab(),
       SharedMessagesTab(currentUserId: agent.id, currentUserName: agent.name, currentUserRole: 'Agent'),
-      const AgentTrainingTab(),
+      AgentProfileTab(onNavigate: _navigateToTab),
     ];
 
     return Scaffold(
@@ -179,9 +180,9 @@ class _AgentShellState extends State<AgentShell> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  // Settings / Logout
+                  // Settings / Profile
                   GestureDetector(
-                    onTap: () => Navigator.pop(context),
+                    onTap: () => _navigateToTab(5),
                     child: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
@@ -238,9 +239,9 @@ class _AgentShellState extends State<AgentShell> {
             label: 'Messages',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.school_outlined),
-            activeIcon: Icon(Icons.school),
-            label: 'Academy',
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Profile',
           ),
         ],
       ),
