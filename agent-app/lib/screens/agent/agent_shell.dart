@@ -94,12 +94,15 @@ class _AgentShellState extends State<AgentShell> {
                 children: [
                   // FIC Logo
                   Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
                       color: const Color(0xFFFACC15).withOpacity(0.12),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.all_inclusive, color: Color(0xFFFACC15), size: 22),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.asset('assets/logo.jpg', height: 32, width: 32, fit: BoxFit.cover, errorBuilder: (_, __, ___) => const Icon(Icons.all_inclusive, color: Color(0xFFFACC15), size: 22)),
+                    ),
                   ),
                   const SizedBox(width: 12),
                   // Name & Code

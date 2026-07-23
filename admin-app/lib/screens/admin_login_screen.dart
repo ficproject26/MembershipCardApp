@@ -95,7 +95,10 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.all_inclusive, color: goldColor, size: 40),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.asset('assets/logo.jpg', height: 42, width: 42, fit: BoxFit.cover, errorBuilder: (_, __, ___) => Icon(Icons.all_inclusive, color: goldColor, size: 40)),
+                  ),
                   const SizedBox(width: 10),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
