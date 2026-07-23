@@ -8,6 +8,8 @@ import 'loan_tl/loan_tl_tasks_tab.dart';
 import 'loan_tl/loan_tl_reports_tab.dart';
 import 'credit_card_tl/credit_card_tl_dashboard_overview.dart';
 import 'credit_card_tl/credit_card_tl_requests_tab.dart';
+import 'insurance_tl/insurance_tl_dashboard_overview.dart';
+import 'insurance_tl/insurance_tl_requests_tab.dart';
 import 'shared/staff_profile_settings.dart';
 import 'hr/hr_dashboard_main.dart';
 
@@ -83,6 +85,25 @@ class _StaffShellState extends State<StaffShell> {
       tabs = [
         CreditCardTlDashboardOverview(onNavigateToTab: (idx) => setState(() => _currentIndex = idx)),
         const CreditCardTlRequestsTab(),
+        SharedMessagesTab(currentUserId: staff.id, currentUserName: staff.name, currentUserRole: 'Staff'),
+        const StaffProfileSettingsTab(),
+      ];
+      navDestinations = const [
+        NavigationRailDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: Text('Dashboard')),
+        NavigationRailDestination(icon: Icon(Icons.assignment_outlined), selectedIcon: Icon(Icons.assignment), label: Text('Requests')),
+        NavigationRailDestination(icon: Icon(Icons.chat_outlined), selectedIcon: Icon(Icons.chat), label: Text('Messages')),
+        NavigationRailDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: Text('Settings')),
+      ];
+      bottomNavItems = const [
+        BottomNavigationBarItem(icon: Icon(Icons.dashboard_outlined), activeIcon: Icon(Icons.dashboard), label: 'Dashboard'),
+        BottomNavigationBarItem(icon: Icon(Icons.assignment_outlined), activeIcon: Icon(Icons.assignment), label: 'Requests'),
+        BottomNavigationBarItem(icon: Icon(Icons.chat_outlined), activeIcon: Icon(Icons.chat), label: 'Messages'),
+        BottomNavigationBarItem(icon: Icon(Icons.settings_outlined), activeIcon: Icon(Icons.settings), label: 'Settings'),
+      ];
+    } else if (staff.role == StaffRole.insuranceTL) {
+      tabs = [
+        InsuranceTlDashboardOverview(onNavigateToTab: (idx) => setState(() => _currentIndex = idx)),
+        const InsuranceTlRequestsTab(),
         SharedMessagesTab(currentUserId: staff.id, currentUserName: staff.name, currentUserRole: 'Staff'),
         const StaffProfileSettingsTab(),
       ];

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared/shared.dart';
 import 'credit_card_tl/credit_card_tl_dashboard_overview.dart';
+import 'insurance_tl/insurance_tl_dashboard_overview.dart';
 
 class StaffDashboardFactory {
   static Widget buildDashboardForRole(StaffRole role, bool isDark) {
@@ -12,7 +13,7 @@ class StaffDashboardFactory {
       case StaffRole.loanTL:
         return _TlLeadsDashboard(title: 'Loan TL Dashboard', serviceType: 'Loan', isDark: isDark);
       case StaffRole.insuranceTL:
-        return _TlLeadsDashboard(title: 'Insurance TL Dashboard', serviceType: 'Insurance', isDark: isDark);
+        return const InsuranceTlDashboardOverview();
       case StaffRole.itProjectManager:
         return _GenericDashboard(title: 'IT Project Manager Dashboard', icon: Icons.developer_board, isDark: isDark);
       case StaffRole.hr:
