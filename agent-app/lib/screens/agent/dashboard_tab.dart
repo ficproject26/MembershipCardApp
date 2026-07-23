@@ -1057,7 +1057,8 @@ class _AgentDashboardTabState extends State<AgentDashboardTab>
                         onPressed: () {
                           Navigator.pop(dialogCtx);
                           final neededTier = (svc['tiers'] as List<MembershipTier>).first;
-                          _simulateRazorpayUpgrade(context, state, neededTier);
+                          final appState = context.read<AppStateProvider>();
+                          _simulateRazorpayUpgrade(context, appState, neededTier);
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFFFFC107),

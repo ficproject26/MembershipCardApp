@@ -429,7 +429,7 @@ class _AgentProfileTabState extends State<AgentProfileTab> {
                       trailing: Switch(
                         value: state.isDarkMode,
                         activeColor: const Color(0xFFFACC15),
-                        onChanged: (val) => state.toggleDarkMode(),
+                        onChanged: (val) => state.toggleTheme(),
                       ),
                     ),
                     const Divider(color: Colors.white10, height: 1),

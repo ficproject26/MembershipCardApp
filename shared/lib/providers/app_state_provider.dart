@@ -10,6 +10,7 @@ import '../models/transaction_model.dart';
 import '../models/config_model.dart';
 import '../models/staff_model.dart';
 import '../models/kyc_document_model.dart';
+import '../models/vip_code_model.dart';
 import '../services/agent_service.dart';
 import '../services/lead_service.dart' as ls;
 import '../services/pricing_service.dart';
@@ -381,9 +382,9 @@ class AppStateProvider extends ChangeNotifier {
       final input = emailOrPhone.trim().toLowerCase();
       final localMatch = _agents.firstWhere(
         (a) => (a.email.toLowerCase() == input || a.phoneNumber.trim() == emailOrPhone.trim()),
-        orElse: () => AgentModel(id: '', name: '', email: '', phoneNumber: '', agentCode: '', password: '', membership: MembershipTier.Basic, walletBalance: 0, totalEarnings: 0, kycStatus: KycStatus.NotSubmitted),
+        orElse: () => AgentModel(id: '', name: '', email: '', phoneNumber: '', agentCode: '', membership: MembershipTier.Basic, walletBalance: 0, totalEarnings: 0, kycStatus: KycStatus.NotSubmitted, dateJoined: DateTime.now()),
       );
-      if (localMatch.id.isNotEmpty && (localMatch.password == null || localMatch.password == password || password.isNotEmpty)) {
+      if (localMatch.id.isNotEmpty) {
         loginAsAgent(localMatch.id);
         _error = null;
         return localMatch;

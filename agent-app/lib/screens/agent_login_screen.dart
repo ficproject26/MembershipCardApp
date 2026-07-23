@@ -771,6 +771,4 @@ class _AgentLoginScreenState extends State<AgentLoginScreen> {
       ));
     }
   }
-
-}
 }
