@@ -111,6 +111,7 @@ class AppStateProvider extends ChangeNotifier {
     _isStaff = false;
     _currentAgentId = agentId;
     _currentStaffId = null;
+    initSocket();
     fetchAgentLeads(agentId);
     // Register FCM token
     NotificationService().registerToken(agentId, 'agent');
@@ -140,6 +141,7 @@ class AppStateProvider extends ChangeNotifier {
 
   // Configuration State — defaults used until backend responds
   List<MembershipPricing> _pricings = [
+    MembershipPricing(tier: MembershipTier.Basic, price: 0, benefits: ['Basic Dashboard Access']),
     MembershipPricing(tier: MembershipTier.Silver, price: 999, benefits: ['Credit Card Leads', 'Loan Leads', 'Basic Dashboard', '5% Direct Referrals']),
     MembershipPricing(tier: MembershipTier.Gold, price: 1999, benefits: ['Credit Card Leads', 'Loan Leads', 'Jobs Search/Listing', '8% Direct Referrals', '2% Indirect Referrals']),
     MembershipPricing(tier: MembershipTier.Diamond, price: 4999, benefits: ['Credit Card Leads', 'Loan Leads', 'Jobs Listings', 'Insurance Leads', '10% Direct Referrals', '3% Indirect Referrals', 'Priority KYC Review']),
@@ -149,6 +151,8 @@ class AppStateProvider extends ChangeNotifier {
 
   double getTierRate(CommissionConfig config, MembershipTier tier) {
     switch (tier) {
+      case MembershipTier.Basic:
+        return 0.0;
       case MembershipTier.Silver:
         return config.silverRate;
       case MembershipTier.Gold:
@@ -413,6 +417,7 @@ class AppStateProvider extends ChangeNotifier {
   // ─── Data Fetching ────────────────────────────────────────────────────────
 
   Future<void> fetchAllData() async {
+    initSocket();
     List<Future> tasks = [
       fetchPricing(),
       fetchCommissions(),
@@ -481,6 +486,7 @@ class AppStateProvider extends ChangeNotifier {
     notifyListeners();
     try {
       _leads = await _leadService.getLeadsByAgent(agentId);
+      _agents = await _agentService.getAllAgents();
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -489,18 +495,37 @@ class AppStateProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> updateLeadStatus(String id, String newStatus) async {
+  void initSocket() {
+    if (_systemSocket != null && _systemSocket!.connected) return;
     try {
-      final updated = await _leadService.updateLead(id, {'status': newStatus});
-      final index = _leads.indexWhere((l) => l.id == id);
-      if (index != -1) {
-        _leads[index] = updated;
-        notifyListeners();
-      }
+      _systemSocket = IO.io(
+        ApiClient.baseUrl,
+        IO.OptionBuilder()
+            .setTransports(['websocket'])
+            .disableAutoConnect()
+            .build(),
+      );
+      _systemSocket!.connect();
+      _systemSocket!.on('system_data_changed', (data) {
+        if (data is Map && (data['model'] == 'Lead' || data['model'] == 'Agent')) {
+          if (_currentAgentId != null) {
+            fetchAgentLeads(_currentAgentId!);
+          } else {
+            fetchLeads();
+          }
+        }
+      });
     } catch (e) {
-      _error = e.toString();
-      notifyListeners();
+      debugPrint('Socket connection error: $e');
     }
+  }
+
+  Future<void> updateLeadStatus(String id, String newStatus) async {
+    LeadStatus statusEnum = LeadStatus.values.firstWhere(
+      (e) => e.name == newStatus,
+      orElse: () => LeadStatus.Pending,
+    );
+    await verifyLead(id, statusEnum);
   }
 
   Future<void> fetchPricing() async {
@@ -780,39 +805,50 @@ class AppStateProvider extends ChangeNotifier {
 
   Future<void> verifyLead(String leadId, LeadStatus newStatus, {String? reason}) async {
     int idx = _leads.indexWhere((l) => l.id == leadId);
-    if (idx == -1) return;
+    LeadModel? lead;
 
-    final lead = _leads[idx];
-    _leads[idx] = lead.copyWith(status: newStatus, rejectionReason: reason);
-    notifyListeners();
+    if (idx != -1) {
+      lead = _leads[idx].copyWith(status: newStatus, rejectionReason: reason);
+      _leads[idx] = lead;
+      notifyListeners();
+    }
 
     try {
-      await _leadService.updateLead(leadId, {
+      final updatedLead = await _leadService.updateLead(leadId, {
         'status': newStatus.name,
         if (reason != null) 'rejectionReason': reason,
       });
+      if (idx != -1) {
+        _leads[idx] = updatedLead;
+      } else {
+        _leads.add(updatedLead);
+      }
+      lead = updatedLead;
+      notifyListeners();
     } catch (e) {
       _error = e.toString();
       notifyListeners();
       return;
     }
 
+    if (lead == null) return;
+
     bool shouldPayCommission = false;
     if (lead.serviceType == 'Loan') {
       if (newStatus == LeadStatus.Dispatched) shouldPayCommission = true;
     } else if (lead.serviceType == 'IT Projects') {
-      if (newStatus == LeadStatus.Stage2Approved) shouldPayCommission = true;
+      if (newStatus == LeadStatus.Stage2Approved || newStatus == LeadStatus.Approved) shouldPayCommission = true;
     } else {
       if (newStatus == LeadStatus.Approved) shouldPayCommission = true;
     }
 
     if (shouldPayCommission) {
       CommissionConfig commission = _commissions.firstWhere(
-        (c) => c.serviceType == lead.serviceType,
-        orElse: () => CommissionConfig(serviceType: lead.serviceType, silverRate: 400.0, goldRate: 700.0, diamondRate: 900.0, platinumRate: 1000.0),
+        (c) => c.serviceType == lead!.serviceType,
+        orElse: () => CommissionConfig(serviceType: lead!.serviceType, silverRate: 400.0, goldRate: 700.0, diamondRate: 900.0, platinumRate: 1000.0),
       );
 
-      int agentIdx = _agents.indexWhere((a) => a.agentCode == lead.agentCode);
+      int agentIdx = _agents.indexWhere((a) => a.agentCode == lead!.agentCode || a.id == lead!.agentCode);
       if (agentIdx != -1) {
         final ag = _agents[agentIdx];
         double directPayout = getTierRate(commission, ag.membership);

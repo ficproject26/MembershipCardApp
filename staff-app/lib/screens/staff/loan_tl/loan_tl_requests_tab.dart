@@ -281,63 +281,18 @@ class _LoanTlRequestsTabState extends State<LoanTlRequestsTab> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Actions', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
+          Text('Update Status', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isDark ? Colors.white : Colors.black87)),
           const SizedBox(height: 24),
-          if (_selectedRequest!.status.name == 'Pending') ...[
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Provider.of<AppStateProvider>(context, listen: false).updateLeadStatus(_selectedRequest!.id, 'KYC_Pending');
-                  setState(() {
-                    _selectedRequest = null;
-                  });
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1976D2), // Blue
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                ),
-                child: const Text('Forward to KYC Team', style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
-            ),
-            const SizedBox(height: 16),
-          ] else if (_selectedRequest!.status.name == 'KYC_Pending') ...[
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.orange.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
-              ),
-              child: const Row(
-                children: [
-                  Icon(Icons.info_outline, color: Colors.orange, size: 20),
-                  SizedBox(width: 12),
-                  Expanded(child: Text('This request is currently being processed by the KYC Team.', style: TextStyle(color: Colors.orange))),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: () {
-                Provider.of<AppStateProvider>(context, listen: false).updateLeadStatus(_selectedRequest!.id, 'Rejected');
-                setState(() {
-                  _selectedRequest = null;
-                });
-              },
-              style: OutlinedButton.styleFrom(
-                foregroundColor: Colors.red,
-                side: const BorderSide(color: Colors.red),
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-              child: const Text('Reject Request', style: TextStyle(fontWeight: FontWeight.bold)),
-            ),
+          Wrap(
+            spacing: 12,
+            runSpacing: 12,
+            children: [
+              _buildStatusButton(context, 'Verify', LeadStatus.Stage1Approved, Colors.amber),
+              _buildStatusButton(context, 'Bank', LeadStatus.Stage2Approved, Colors.orange),
+              _buildStatusButton(context, 'Approved', LeadStatus.Approved, Colors.green),
+              _buildStatusButton(context, 'Disbursed', LeadStatus.Dispatched, Colors.teal),
+              _buildStatusButton(context, 'Reject', LeadStatus.Rejected, Colors.red),
+            ],
           ),
         ],
       ),
@@ -367,17 +322,44 @@ class _LoanTlRequestsTabState extends State<LoanTlRequestsTab> {
   }
 
   Widget _buildDetailRow(String label, String value, bool isDark) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 120,
-          child: Text(label, style: TextStyle(color: isDark ? Colors.white54 : Colors.black54)),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 14)),
+          Text(value, style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.w600, fontSize: 14)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusButton(BuildContext context, String label, LeadStatus targetStatus, MaterialColor color) {
+    final isActive = _selectedRequest?.status == targetStatus;
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: isActive ? color : color.withValues(alpha: 0.1),
+        foregroundColor: isActive ? Colors.white : color,
+        elevation: isActive ? 2 : 0,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: color),
         ),
-        Expanded(
-          child: Text(value, style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.w500)),
-        ),
-      ],
+      ),
+      onPressed: () {
+        if (_selectedRequest != null) {
+          Provider.of<AppStateProvider>(context, listen: false).updateLeadStatus(_selectedRequest!.id, targetStatus.name);
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text('Status updated to $label'),
+            backgroundColor: color,
+          ));
+          setState(() {
+            _selectedRequest = null;
+          });
+        }
+      },
+      child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
     );
   }
 

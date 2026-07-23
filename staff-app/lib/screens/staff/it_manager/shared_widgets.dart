@@ -111,8 +111,20 @@ class ITProjectRequestCard extends StatelessWidget {
                       _showAssignDialog(context);
                     }),
                     _buildActionButton(Icons.check_circle_outline, 'Approve', Colors.green, () {
-                      Provider.of<AppStateProvider>(context, listen: false).verifyLead(lead.id, LeadStatus.Stage1Approved);
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), content: Text('Project moved to Requirements (Projects Tab)')));
+                      LeadStatus nextStatus = LeadStatus.Stage1Approved;
+                      String stageMsg = 'Project moved to Requirements (Projects Tab)';
+                      if (lead.status == LeadStatus.Stage1Approved) {
+                        nextStatus = LeadStatus.Stage2Approved;
+                        stageMsg = 'Project moved to In Development';
+                      } else if (lead.status == LeadStatus.Stage2Approved) {
+                        nextStatus = LeadStatus.Stage3Approved;
+                        stageMsg = 'Project moved to Testing';
+                      } else if (lead.status == LeadStatus.Stage3Approved) {
+                        nextStatus = LeadStatus.Approved;
+                        stageMsg = 'Project Delivered & Completed';
+                      }
+                      Provider.of<AppStateProvider>(context, listen: false).verifyLead(lead.id, nextStatus);
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), content: Text(stageMsg)));
                     }),
                     _buildActionButton(Icons.cancel_outlined, 'Reject', Colors.red, () {
                       Provider.of<AppStateProvider>(context, listen: false).verifyLead(lead.id, LeadStatus.Rejected);

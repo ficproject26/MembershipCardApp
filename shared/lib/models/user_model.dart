@@ -1,4 +1,4 @@
-enum MembershipTier { Silver, Gold, Diamond, Platinum }
+enum MembershipTier { Basic, Silver, Gold, Diamond, Platinum }
 
 enum KycStatus { NotSubmitted, Pending, Approved, Rejected }
 
@@ -50,7 +50,7 @@ class AgentModel {
       agentCode: json['agentCode'] as String,
       membership: MembershipTier.values.firstWhere(
         (e) => e.name == (json['membership'] as String? ?? 'Silver'),
-        orElse: () => MembershipTier.Silver,
+        orElse: () => MembershipTier.Basic,
       ),
       referredBy: json['referredBy'] as String?,
       walletBalance: (json['walletBalance'] as num?)?.toDouble() ?? 0.0,

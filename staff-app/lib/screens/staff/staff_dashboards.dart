@@ -1004,13 +1004,13 @@ class _TlLeadsDashboardState extends State<_TlLeadsDashboard> {
                                     else if (lead.status == LeadStatus.Stage2Approved) { nextStatus = LeadStatus.Stage3Approved; msg = 'Sent to Testing'; }
                                     else if (lead.status == LeadStatus.Stage3Approved) { nextStatus = LeadStatus.Approved; msg = 'Project Delivered'; }
                                   } else if (lead.serviceType == 'Credit Card') {
-                                    if (lead.status == LeadStatus.Stage1Pending) {
+                                    if (lead.status == LeadStatus.Pending || lead.status == LeadStatus.Stage1Pending) {
                                       nextStatus = LeadStatus.Stage1Approved;
                                       msg = 'Stage 1 Approved';
-                                    } else if (lead.status == LeadStatus.Stage2Pending) {
+                                    } else if (lead.status == LeadStatus.Stage1Approved || lead.status == LeadStatus.Stage2Pending) {
                                       nextStatus = LeadStatus.Stage2Approved;
-                                      msg = 'Lead Verified & Approved';
-                                    } else if (lead.status == LeadStatus.Stage3Pending) {
+                                      msg = 'Stage 2 Approved (Lead Verified & Sent to Bank)';
+                                    } else if (lead.status == LeadStatus.Stage2Approved || lead.status == LeadStatus.Stage3Pending || lead.status == LeadStatus.Stage3Approved) {
                                       nextStatus = LeadStatus.Approved;
                                       msg = 'Credit Card Lead Fully Approved';
                                     }
@@ -1040,8 +1040,9 @@ class _TlLeadsDashboardState extends State<_TlLeadsDashboard> {
                                       (lead.status == LeadStatus.Stage1Approved ? 'Start Development' : 
                                       (lead.status == LeadStatus.Stage2Approved ? 'Send to Testing' : 'Deliver Project')))
                                     : lead.serviceType == 'Credit Card' ?
-                                      (lead.status == LeadStatus.Stage1Pending ? 'Verify Stage 1' :
-                                      (lead.status == LeadStatus.Stage2Pending ? 'Approve Lead' : 'Approve Bank Message'))
+                                      (lead.status == LeadStatus.Pending || lead.status == LeadStatus.Stage1Pending ? 'Approve Stage 1' :
+                                      (lead.status == LeadStatus.Stage1Approved || lead.status == LeadStatus.Stage2Pending ? 'Approve Stage 2' :
+                                      (lead.status == LeadStatus.Stage2Approved || lead.status == LeadStatus.Stage3Pending ? 'Final Approval' : 'Fully Approved')))
                                     :
                                       (lead.status == LeadStatus.Pending ? 'Verify Documents' : 
                                       (lead.status == LeadStatus.Stage1Approved ? 'Send to Bank' : 

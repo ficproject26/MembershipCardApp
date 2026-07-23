@@ -19,6 +19,9 @@ class AdminMembershipTab extends StatelessWidget {
         Color tierColor = Colors.grey;
 
         switch (pricing.tier) {
+          case MembershipTier.Basic:
+            tierColor = Colors.grey;
+            break;
           case MembershipTier.Silver:
             tierColor = Colors.grey[400]!;
             break;

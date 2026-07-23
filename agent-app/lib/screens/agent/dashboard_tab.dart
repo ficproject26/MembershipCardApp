@@ -127,7 +127,11 @@ class _AgentDashboardTabState extends State<AgentDashboardTab>
     double tierProgress = 0.0;
     String nextTier = 'Max Level';
     double nextTarget = 0;
-    if (agent.membership == MembershipTier.Silver) {
+    if (agent.membership == MembershipTier.Basic) {
+      tierProgress = (agent.totalEarnings / 5000).clamp(0.0, 1.0);
+      nextTier = 'Silver';
+      nextTarget = 5000;
+    } else if (agent.membership == MembershipTier.Silver) {
       tierProgress = (agent.totalEarnings / 15000).clamp(0.0, 1.0);
       nextTier = 'Gold';
       nextTarget = 15000;
@@ -1463,10 +1467,16 @@ class _AgentDashboardTabState extends State<AgentDashboardTab>
           'textColor': Colors.white,
         };
       case MembershipTier.Silver:
-      default:
         return {
           'gradient': [const Color(0xFF9E9E9E), const Color(0xFF757575)],
           'emoji': '🥈',
+          'textColor': Colors.white,
+        };
+      case MembershipTier.Basic:
+      default:
+        return {
+          'gradient': [const Color(0xFF424242), const Color(0xFF212121)],
+          'emoji': '👋',
           'textColor': Colors.white,
         };
     }

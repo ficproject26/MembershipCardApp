@@ -566,77 +566,18 @@ class _LoanTlDashboardOverviewState extends State<LoanTlDashboardOverview> {
                       const SizedBox(height: 10),
                       _buildDetailRow('Date', '${req.dateCreated.day}/${req.dateCreated.month}/${req.dateCreated.year}', isDark),
                       const SizedBox(height: 28),
-                      Text('Actions', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: isDark ? Colors.white70 : Colors.black54)),
+                      Text('Update Status', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: isDark ? Colors.white70 : Colors.black54)),
                       const SizedBox(height: 12),
-                      if (req.status.name == 'Pending') ...[
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            icon: const Icon(Icons.security, size: 18),
-                            label: const Text('Forward to KYC Team', style: TextStyle(fontWeight: FontWeight.bold)),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF1976D2),
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
-                            onPressed: () {
-                              Provider.of<AppStateProvider>(context, listen: false)
-                                  .updateLeadStatus(req.id, 'KYC_Pending');
-                              Navigator.pop(ctx);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Request forwarded to KYC Team ✅'),
-                                  backgroundColor: Color(0xFF1976D2),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                      ] else if (req.status.name == 'KYC_Pending') ...[
-                         Container(
-                           padding: const EdgeInsets.all(12),
-                           decoration: BoxDecoration(
-                             color: Colors.orange.withValues(alpha: 0.1),
-                             borderRadius: BorderRadius.circular(8),
-                             border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
-                           ),
-                           child: const Row(
-                             children: [
-                               Icon(Icons.info_outline, color: Colors.orange, size: 20),
-                               SizedBox(width: 12),
-                               Expanded(child: Text('This request is currently being processed by the KYC Team.', style: TextStyle(color: Colors.orange))),
-                             ],
-                           ),
-                         ),
-                         const SizedBox(height: 12),
-                      ],
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          icon: const Icon(Icons.cancel_outlined, size: 18),
-                          label: const Text('Reject Request', style: TextStyle(fontWeight: FontWeight.bold)),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.red,
-                            side: const BorderSide(color: Colors.red),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          onPressed: () {
-                            Provider.of<AppStateProvider>(context, listen: false)
-                                .updateLeadStatus(req.id, 'Rejected');
-                            Navigator.pop(ctx);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Request rejected'),
-                                backgroundColor: Colors.red,
-                                behavior: SnackBarBehavior.floating,
-                              ),
-                            );
-                          },
-                        ),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          _buildStatusButton(context, ctx, req, 'Verify', LeadStatus.Stage1Approved, Colors.amber),
+                          _buildStatusButton(context, ctx, req, 'Bank', LeadStatus.Stage2Approved, Colors.orange),
+                          _buildStatusButton(context, ctx, req, 'Approved', LeadStatus.Approved, Colors.green),
+                          _buildStatusButton(context, ctx, req, 'Disbursed', LeadStatus.Dispatched, Colors.teal),
+                          _buildStatusButton(context, ctx, req, 'Reject', LeadStatus.Rejected, Colors.red),
+                        ],
                       ),
                     ],
                   ),
@@ -651,16 +592,35 @@ class _LoanTlDashboardOverviewState extends State<LoanTlDashboardOverview> {
 
   Widget _buildDetailRow(String label, String value, bool isDark) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        SizedBox(
-          width: 100,
-          child: Text(label, style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 13)),
-        ),
-        Expanded(
-          child: Text(value, style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.w500, fontSize: 13)),
-        ),
+        Text(label, style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 13)),
+        Text(value, style: TextStyle(color: isDark ? Colors.white : Colors.black87, fontWeight: FontWeight.w500, fontSize: 13)),
       ],
+    );
+  }
+
+  Widget _buildStatusButton(BuildContext context, BuildContext dialogCtx, LeadModel req, String label, LeadStatus targetStatus, MaterialColor color) {
+    final isActive = req.status == targetStatus;
+    return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: isActive ? color : color.withValues(alpha: 0.1),
+        foregroundColor: isActive ? Colors.white : color,
+        elevation: isActive ? 2 : 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(color: color),
+        ),
+      ),
+      onPressed: () {
+        Provider.of<AppStateProvider>(context, listen: false).updateLeadStatus(req.id, targetStatus.name);
+        Navigator.pop(dialogCtx);
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Status updated to $label'),
+          backgroundColor: color,
+        ));
+      },
+      child: Text(label),
     );
   }
 }

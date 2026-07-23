@@ -18,10 +18,15 @@ export class NotificationController {
 
     try {
       if (userType === 'agent') {
-        await this.prisma.agent.update({
-          where: { id: userId },
-          data: { fcmToken },
+        const agent = await this.prisma.agent.findFirst({
+          where: { OR: [{ id: userId }, { agentCode: userId }] }
         });
+        if (agent) {
+          await this.prisma.agent.update({
+            where: { id: agent.id },
+            data: { fcmToken },
+          });
+        }
       } else if (userType === 'staff' || userType === 'admin') {
         await this.prisma.staff.update({
           where: { id: userId },

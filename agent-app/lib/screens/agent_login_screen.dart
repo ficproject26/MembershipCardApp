@@ -27,7 +27,7 @@ class _AgentLoginScreenState extends State<AgentLoginScreen> {
   final TextEditingController _regEmailController = TextEditingController();
   final TextEditingController _regPasswordController = TextEditingController();
   final TextEditingController _regReferralController = TextEditingController();
-  MembershipTier _selectedTier = MembershipTier.Silver;
+  MembershipTier _selectedTier = MembershipTier.Basic;
 
   final Color bgColor = const Color(0xFF0C1017);
   final Color inputColor = const Color(0xFF131A22);
@@ -591,57 +591,6 @@ class _AgentLoginScreenState extends State<AgentLoginScreen> {
         _buildDarkTextField(controller: _regReferralController, label: 'Referral Agent Code (Optional)', icon: Icons.group_add_outlined),
         const SizedBox(height: 24),
 
-        // Membership Tiers Dropdown
-        const Text('Select Membership Level', style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500)),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          decoration: BoxDecoration(
-            color: inputColor,
-            border: Border.all(color: borderColor),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<MembershipTier>(
-              value: _selectedTier,
-              isExpanded: true,
-              dropdownColor: inputColor,
-              icon: const Icon(Icons.keyboard_arrow_down, color: Colors.white54),
-              items: MembershipTier.values.map((tier) {
-                return DropdownMenuItem(
-                  value: tier,
-                  child: Text(tier.name, style: const TextStyle(color: Colors.white)),
-                );
-              }).toList(),
-              onChanged: (val) {
-                if (val != null) {
-                  setState(() => _selectedTier = val);
-                }
-              },
-            ),
-          ),
-        ),
-        const SizedBox(height: 20),
-
-        // Pricing details display
-        Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: goldColor.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: goldColor.withOpacity(0.3)),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Membership Cost:', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
-              Text(
-                '₹${pricing.price.toStringAsFixed(0)}',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: goldColor),
-              ),
-            ],
-          ),
-        ),
         const SizedBox(height: 32),
 
         Container(
@@ -684,9 +633,9 @@ class _AgentLoginScreenState extends State<AgentLoginScreen> {
             child: const Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text('Sign Up & Pay', style: TextStyle(color: Colors.black87, fontSize: 16, fontWeight: FontWeight.bold)),
+                Text('Sign Up', style: TextStyle(color: Colors.black87, fontSize: 16, fontWeight: FontWeight.bold)),
                 SizedBox(width: 8),
-                Icon(Icons.payment, color: Colors.black87, size: 20),
+                Icon(Icons.person_add, color: Colors.black87, size: 20),
               ],
             ),
           ),
@@ -747,9 +696,9 @@ class _AgentLoginScreenState extends State<AgentLoginScreen> {
             children: [
               SizedBox(height: 40, width: 40, child: CircularProgressIndicator(color: goldColor)),
               const SizedBox(height: 16),
-              const Text('Initializing Razorpay Secure Checkout...', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white)),
+              const Text('Creating your account...', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.white)),
               const SizedBox(height: 4),
-              const Text('Complete membership fee to activate your referral code.', style: TextStyle(fontSize: 10, color: Colors.white54), textAlign: TextAlign.center),
+              const Text('Please wait while we set up your dashboard.', style: TextStyle(fontSize: 10, color: Colors.white54), textAlign: TextAlign.center),
             ],
           ),
         );

@@ -26,7 +26,7 @@ class MembershipPricing {
       id: json['id'] as String?,
       tier: MembershipTier.values.firstWhere(
         (e) => e.name == (json['tier'] as String? ?? 'Silver'),
-        orElse: () => MembershipTier.Silver,
+        orElse: () => MembershipTier.Basic,
       ),
       price: (json['price'] as num?)?.toDouble() ?? 0.0,
       benefits: parsedBenefits,

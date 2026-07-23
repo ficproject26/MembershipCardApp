@@ -196,38 +196,55 @@ class _ServiceDetailsScreenState extends State<ServiceDetailsScreen> {
           ),
           const Divider(),
           Expanded(
-            child: filteredLeads.isEmpty
-                ? Center(
-                    child: Text('No referrals found for $_selectedFilter.'),
-                  )
-                : SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: SingleChildScrollView(
-                      child: DataTable(
-                        showCheckboxColumn: false,
-                        columns: const [
-                          DataColumn(label: Text('Customer', style: TextStyle(fontWeight: FontWeight.bold))),
-                          DataColumn(label: Text('Status', style: TextStyle(fontWeight: FontWeight.bold))),
-                          DataColumn(label: Text('Date', style: TextStyle(fontWeight: FontWeight.bold))),
-                        ],
-                        rows: filteredLeads.map((lead) {
-                          String statusText = _getStatusText(lead, service.title);
+            child: RefreshIndicator(
+              onRefresh: () async {
+                final agentId = state.currentAgent?.id ?? state.currentAgent?.agentCode;
+                if (agentId != null && agentId.isNotEmpty) {
+                  await state.fetchAgentLeads(agentId);
+                } else {
+                  await state.fetchLeads();
+                }
+              },
+              child: filteredLeads.isEmpty
+                  ? SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      child: Container(
+                        height: 300,
+                        alignment: Alignment.center,
+                        child: Text('No referrals found for $_selectedFilter.'),
+                      ),
+                    )
+                  : SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      scrollDirection: Axis.vertical,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: DataTable(
+                          showCheckboxColumn: false,
+                          columns: const [
+                            DataColumn(label: Text('Customer', style: TextStyle(fontWeight: FontWeight.bold))),
+                            DataColumn(label: Text('Status', style: TextStyle(fontWeight: FontWeight.bold))),
+                            DataColumn(label: Text('Date', style: TextStyle(fontWeight: FontWeight.bold))),
+                          ],
+                          rows: filteredLeads.map((lead) {
+                            String statusText = _getStatusText(lead, service.title);
 
-                          return DataRow(
-                            selected: false,
-                            onSelectChanged: (selected) {
-                              // Details view or wizard trigger could go here if needed
-                            },
-                            cells: [
-                              DataCell(Text(lead.customerName?.isNotEmpty == true ? lead.customerName! : 'Customer')),
-                              DataCell(Text(statusText)),
-                              DataCell(Text(lead.dateCreated.toString().split(' ')[0])),
-                            ],
-                          );
-                        }).toList(),
+                            return DataRow(
+                              selected: false,
+                              onSelectChanged: (selected) {
+                                // Details view or wizard trigger could go here if needed
+                              },
+                              cells: [
+                                DataCell(Text(lead.customerName?.isNotEmpty == true ? lead.customerName! : 'Customer')),
+                                DataCell(Text(statusText)),
+                                DataCell(Text(lead.dateCreated.toString().split(' ')[0])),
+                              ],
+                            );
+                          }).toList(),
+                        ),
                       ),
                     ),
-                  ),
+            ),
           ),
         ],
       ),
