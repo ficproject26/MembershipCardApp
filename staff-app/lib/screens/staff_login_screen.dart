@@ -264,6 +264,4 @@ class _StaffLoginScreenState extends State<StaffLoginScreen> {
       ),
     );
   }
-
-}
 }
