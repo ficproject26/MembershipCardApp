@@ -807,7 +807,7 @@ class _CommissionHistoryModalState extends State<CommissionHistoryModal> {
                             const SizedBox(height: 6),
                             Text(
                               '₹${totalCommission.toStringAsFixed(2)}',
-                              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.extrabold, color: Colors.white),
+                              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: Colors.white),
                             ),
                           ],
                         ),
