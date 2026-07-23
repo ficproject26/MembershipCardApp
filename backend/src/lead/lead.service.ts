@@ -88,7 +88,7 @@ export class LeadService implements OnModuleInit {
     const status = (lead.status || '').toLowerCase();
 
     if (sType.includes('loan')) {
-      if (['dispatched', 'disbursed', 'approved', 'stage3approved'].includes(status)) shouldPay = true;
+      if (['dispatched', 'disbursed'].includes(status)) shouldPay = true;
     } else if (sType.includes('credit')) {
       if (['approved', 'stage1approved', 'stage2approved', 'stage3approved'].includes(status)) shouldPay = true;
     } else if (sType.includes('job')) {
