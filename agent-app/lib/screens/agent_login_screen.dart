@@ -207,7 +207,7 @@ class _AgentLoginScreenState extends State<AgentLoginScreen> {
     final agent = await state.agentLogin(emailOrPhone, password);
     if (agent != null) {
       if (!mounted) return;
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const AgentShell()));
+      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const AgentShell()), (route) => false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), content: Text('Welcome back, ${agent.name}!'), backgroundColor: Colors.green),
       );
@@ -762,7 +762,7 @@ class _AgentLoginScreenState extends State<AgentLoginScreen> {
     
     if (newAgent != null) {
       state.loginAsAgent(newAgent.id);
-      Navigator.push(context, MaterialPageRoute(builder: (_) => const AgentShell()));
+      Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => const AgentShell()), (route) => false);
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(behavior: SnackBarBehavior.floating, width: 400, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), 
         content: Text('Registered successfully! Your new code is ${newAgent.agentCode}'),
         backgroundColor: Colors.green,

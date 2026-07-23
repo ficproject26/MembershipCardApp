@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared/shared.dart';
 import 'dashboard_tab.dart';
@@ -77,7 +78,41 @@ class _AgentShellState extends State<AgentShell> {
       AgentProfileTab(onNavigate: _navigateToTab),
     ];
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (_currentIndex != 0) {
+          setState(() {
+            _currentIndex = 0;
+          });
+        } else {
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              backgroundColor: const Color(0xFF0F172A),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: const Text('Exit App?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              content: const Text('Are you sure you want to exit FIC Membership Club?', style: TextStyle(color: Colors.white70)),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Cancel', style: TextStyle(color: Colors.white54)),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFACC15)),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    SystemNavigator.pop();
+                  },
+                  child: const Text('Exit', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+          );
+        }
+      },
+      child: Scaffold(
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(64),
         child: Container(
@@ -248,6 +283,7 @@ class _AgentShellState extends State<AgentShell> {
           ),
         ],
       ),
+    ),
     );
   }
 }
