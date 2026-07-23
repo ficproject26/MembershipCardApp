@@ -144,10 +144,10 @@ export class LeadService implements OnModuleInit {
     if (!agent) return;
 
     const tier = (agent.membership || 'Silver').toLowerCase();
-    let payout = rateConfig.silverRate || 500;
-    if (tier === 'platinum') payout = rateConfig.platinumRate || 2500;
-    else if (tier === 'diamond') payout = rateConfig.diamondRate || 2200;
-    else if (tier === 'gold') payout = rateConfig.goldRate || 1800;
+    let payout = rateConfig.silverRate ?? 500;
+    if (tier === 'platinum') payout = rateConfig.platinumRate ?? payout;
+    else if (tier === 'diamond') payout = rateConfig.diamondRate ?? payout;
+    else if (tier === 'gold') payout = rateConfig.goldRate ?? payout;
 
     // Credit Agent Wallet & Total Earnings
     await this.prisma.agent.update({
