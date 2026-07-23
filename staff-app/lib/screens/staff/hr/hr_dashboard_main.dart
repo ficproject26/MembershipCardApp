@@ -925,10 +925,14 @@ class _HrDashboardMainState extends State<HrDashboardMain> {
     Color color;
     switch (status) {
       case 'Selected': color = Colors.green; break;
-      case 'In Process': color = Colors.blue; break;
+      case 'Converted': color = Colors.teal; break;
+      case 'Process': color = Colors.amber; break;
+      case 'In Process': color = Colors.amber; break;
+      case 'Followup': color = Colors.purple; break;
       case 'Interview': color = Colors.purple; break;
       case 'Pending': color = Colors.orange; break;
-      default: color = Colors.grey;
+      case 'Rejected': color = Colors.red; break;
+      default: color = Colors.blue;
     }
 
     return Container(
@@ -947,7 +951,9 @@ class _HrDashboardMainState extends State<HrDashboardMain> {
 
   void _showStatusUpdateDialog(BuildContext context, HrRecentApplication app) {
     String selectedStatus = app.status;
-    final statuses = ['Pending', 'In Process', 'Interview', 'Selected', 'Rejected'];
+    if (selectedStatus == 'In Process') selectedStatus = 'Process';
+    if (selectedStatus == 'Interview') selectedStatus = 'Followup';
+    final statuses = ['Pending', 'Process', 'Followup', 'Converted', 'Selected', 'Rejected'];
 
     showDialog(
       context: context,
@@ -1003,7 +1009,12 @@ class _HrDashboardMainState extends State<HrDashboardMain> {
                   onPressed: () async {
                     Navigator.pop(ctx);
                     try {
-                      await LeadService().updateLead(app.id, {'status': selectedStatus});
+                      final appState = Provider.of<AppStateProvider>(context, listen: false);
+                      LeadStatus statusEnum = LeadStatus.values.firstWhere(
+                        (e) => e.name.toLowerCase() == selectedStatus.toLowerCase(),
+                        orElse: () => LeadStatus.Pending,
+                      );
+                      await appState.verifyLead(app.id, statusEnum);
                       setState(() {
                         _dashboardStatsFuture = StaffService().getHrDashboardStats();
                       });

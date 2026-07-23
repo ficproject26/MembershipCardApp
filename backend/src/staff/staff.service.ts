@@ -65,8 +65,8 @@ export class StaffService {
 
     const totalReferrals = await this.prisma.lead.count({ where: serviceFilter });
     const pendingApplications = await this.prisma.lead.count({ where: { AND: [serviceFilter, { status: 'Pending' }] } });
-    const inProcess = await this.prisma.lead.count({ where: { AND: [serviceFilter, { status: 'In Process' }] } });
-    const selectedCandidates = await this.prisma.lead.count({ where: { AND: [serviceFilter, { status: { in: ['Selected', 'Approved', 'Stage1Approved', 'Stage2Approved', 'Stage3Approved'] } }] } });
+    const inProcess = await this.prisma.lead.count({ where: { AND: [serviceFilter, { status: { in: ['Process', 'In Process', 'Followup', 'Interview'] } }] } });
+    const selectedCandidates = await this.prisma.lead.count({ where: { AND: [serviceFilter, { status: { in: ['Selected', 'Converted', 'Approved'] } }] } });
     
     const appliedCount = await this.prisma.lead.count({ where: { AND: [serviceFilter, { status: 'Applied' }] } });
     const screeningCount = await this.prisma.lead.count({ where: { AND: [serviceFilter, { status: 'Screening' }] } });
