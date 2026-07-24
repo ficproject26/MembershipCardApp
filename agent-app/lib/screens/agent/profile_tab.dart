@@ -62,148 +62,243 @@ class _AgentProfileTabState extends State<AgentProfileTab> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── HERO PROFILE HEADER CARD ───────────────────────────────────
-              GlassCard(
-                padding: const EdgeInsets.all(20),
-                borderColor: const Color(0xFFFACC15).withOpacity(0.3),
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 32,
-                          backgroundColor: const Color(0xFFFACC15).withOpacity(0.2),
-                          child: Text(
-                            agent.name.isNotEmpty ? agent.name[0].toUpperCase() : 'A',
-                            style: const TextStyle(
-                              fontSize: 26,
-                              fontWeight: FontWeight.w900,
-                              color: Color(0xFFFACC15),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                agent.name,
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.white,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                agent.email,
-                                style: const TextStyle(fontSize: 12, color: Colors.white54),
-                              ),
-                              Text(
-                                agent.phoneNumber,
-                                style: const TextStyle(fontSize: 12, color: Colors.white54),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    const Divider(color: Colors.white10),
-                    const SizedBox(height: 12),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // Membership Badge
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: agent.membership == MembershipTier.Platinum
-                                  ? [const Color(0xFFC084FC), const Color(0xFF7C3AED)]
-                                  : agent.membership == MembershipTier.Diamond
-                                      ? [const Color(0xFF60A5FA), const Color(0xFF2563EB)]
-                                      : agent.membership == MembershipTier.Gold
-                                          ? [const Color(0xFFFBBF24), const Color(0xFFD97706)]
-                                          : [const Color(0xFF9CA3AF), const Color(0xFF4B5563)],
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFFFACC15).withOpacity(0.2),
-                                blurRadius: 10,
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.workspace_premium, color: Colors.white, size: 16),
-                              const SizedBox(width: 6),
-                              Text(
-                                '${agent.membership.name.toUpperCase()} TIER',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w900,
-                                  letterSpacing: 1,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        // KYC Badge
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: agent.kycStatus == KycStatus.Approved
-                                ? Colors.green.withOpacity(0.15)
-                                : agent.kycStatus == KycStatus.Pending
-                                    ? Colors.amber.withOpacity(0.15)
-                                    : Colors.red.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: agent.kycStatus == KycStatus.Approved
-                                  ? Colors.green
-                                  : agent.kycStatus == KycStatus.Pending
-                                      ? Colors.amber
-                                      : Colors.red,
-                              width: 0.8,
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                agent.kycStatus == KycStatus.Approved
-                                    ? Icons.verified
-                                    : Icons.warning_amber_rounded,
-                                size: 14,
-                                color: agent.kycStatus == KycStatus.Approved
-                                    ? Colors.green
-                                    : agent.kycStatus == KycStatus.Pending
-                                        ? Colors.amber
-                                        : Colors.red,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'KYC: ${agent.kycStatus.name}',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                  color: agent.kycStatus == KycStatus.Approved
-                                      ? Colors.green
-                                      : agent.kycStatus == KycStatus.Pending
-                                          ? Colors.amber
-                                          : Colors.red,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+              // ── HERO PROFILE HEADER CARD (ULTRA-PREMIUM LUXURY DESIGN) ─────
+              Container(
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [Color(0xFF1E293B), Color(0xFF0F172A)],
+                  ),
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(
+                    color: const Color(0xFFFACC15).withOpacity(0.4),
+                    width: 1.2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFFACC15).withOpacity(0.12),
+                      blurRadius: 20,
+                      spreadRadius: 2,
+                      offset: const Offset(0, 6),
                     ),
                   ],
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          // Glowing Gold Avatar Circle
+                          Container(
+                            padding: const EdgeInsets.all(3),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFFACC15), Color(0xFFD97706)],
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFFFACC15).withOpacity(0.3),
+                                  blurRadius: 10,
+                                ),
+                              ],
+                            ),
+                            child: CircleAvatar(
+                              radius: 30,
+                              backgroundColor: const Color(0xFF0F172A),
+                              child: Text(
+                                agent.name.isNotEmpty ? agent.name[0].toUpperCase() : 'A',
+                                style: const TextStyle(
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.w900,
+                                  color: Color(0xFFFACC15),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        agent.name,
+                                        style: const TextStyle(
+                                          fontSize: 19,
+                                          fontWeight: FontWeight.w900,
+                                          color: Colors.white,
+                                          letterSpacing: 0.3,
+                                        ),
+                                      ),
+                                    ),
+                                    // Agent Code Chip
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFFACC15).withOpacity(0.15),
+                                        borderRadius: BorderRadius.circular(6),
+                                        border: Border.all(color: const Color(0xFFFACC15).withOpacity(0.4), width: 0.8),
+                                      ),
+                                      child: Text(
+                                        agent.agentCode,
+                                        style: const TextStyle(
+                                          color: Color(0xFFFACC15),
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.email_outlined, size: 13, color: Colors.white60),
+                                    const SizedBox(width: 6),
+                                    Expanded(
+                                      child: Text(
+                                        agent.email,
+                                        style: const TextStyle(fontSize: 12, color: Colors.white70),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.phone_android, size: 13, color: Colors.white60),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      agent.phoneNumber,
+                                      style: const TextStyle(fontSize: 12, color: Colors.white70),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Container(height: 1, color: Colors.white.withOpacity(0.08)),
+                      const SizedBox(height: 14),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // Metallic Membership Tier Badge
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: agent.membership == MembershipTier.Platinum
+                                    ? [const Color(0xFFC084FC), const Color(0xFF7C3AED)]
+                                    : agent.membership == MembershipTier.Diamond
+                                        ? [const Color(0xFF60A5FA), const Color(0xFF2563EB)]
+                                        : agent.membership == MembershipTier.Gold
+                                            ? [const Color(0xFFFBBF24), const Color(0xFFD97706)]
+                                            : [const Color(0xFFE2E8F0), const Color(0xFF64748B)],
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: agent.membership == MembershipTier.Silver
+                                      ? Colors.white.withOpacity(0.2)
+                                      : const Color(0xFFFACC15).withOpacity(0.25),
+                                  blurRadius: 10,
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  agent.membership == MembershipTier.Platinum
+                                      ? Icons.stars
+                                      : agent.membership == MembershipTier.Diamond
+                                          ? Icons.diamond
+                                          : agent.membership == MembershipTier.Gold
+                                              ? Icons.workspace_premium
+                                              : Icons.military_tech,
+                                  color: agent.membership == MembershipTier.Silver ? Colors.black87 : Colors.white,
+                                  size: 16,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  '${agent.membership.name.toUpperCase()} TIER',
+                                  style: TextStyle(
+                                    color: agent.membership == MembershipTier.Silver ? Colors.black87 : Colors.white,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w900,
+                                    letterSpacing: 1,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          // Glowing KYC Status Badge
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                            decoration: BoxDecoration(
+                              color: agent.kycStatus == KycStatus.Approved
+                                  ? const Color(0xFF10B981).withOpacity(0.15)
+                                  : agent.kycStatus == KycStatus.Pending
+                                      ? const Color(0xFFF59E0B).withOpacity(0.15)
+                                      : const Color(0xFFEF4444).withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: agent.kycStatus == KycStatus.Approved
+                                    ? const Color(0xFF10B981)
+                                    : agent.kycStatus == KycStatus.Pending
+                                        ? const Color(0xFFF59E0B)
+                                        : const Color(0xFFEF4444),
+                                width: 1.2,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  agent.kycStatus == KycStatus.Approved
+                                      ? Icons.verified
+                                      : agent.kycStatus == KycStatus.Pending
+                                          ? Icons.hourglass_top
+                                          : Icons.error_outline,
+                                  size: 14,
+                                  color: agent.kycStatus == KycStatus.Approved
+                                      ? const Color(0xFF10B981)
+                                      : agent.kycStatus == KycStatus.Pending
+                                          ? const Color(0xFFF59E0B)
+                                          : const Color(0xFFEF4444),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  agent.kycStatus == KycStatus.Approved
+                                      ? 'KYC: Verified'
+                                      : agent.kycStatus == KycStatus.Pending
+                                          ? 'KYC: Pending'
+                                          : 'KYC: Not Submitted',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w800,
+                                    color: agent.kycStatus == KycStatus.Approved
+                                        ? const Color(0xFF10B981)
+                                        : agent.kycStatus == KycStatus.Pending
+                                            ? const Color(0xFFF59E0B)
+                                            : const Color(0xFFEF4444),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
