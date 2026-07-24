@@ -22,93 +22,108 @@ class AdminMembershipTab extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.vpn_key, color: Color(0xFFFFC107), size: 24),
-                      const SizedBox(width: 10),
-                      Text(
-                        '1-Time Single-Use VIP Pass Codes',
-                        style: TextStyle(
-                          color: isDark ? Colors.white : Colors.black87,
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
-                        ),
+                  const Icon(Icons.vpn_key, color: Color(0xFFFFC107), size: 24),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      '1-Time Single-Use VIP Pass Codes',
+                      style: TextStyle(
+                        color: isDark ? Colors.white : Colors.black87,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
                       ),
-                    ],
-                  ),
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFFFC107)),
-                    icon: const Icon(Icons.add, color: Colors.black87, size: 18),
-                    label: const Text('Generate VIP Code', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 11)),
-                    onPressed: () {
-                      final newCode = state.generateVipCode();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Generated 1-Time VIP Pass Code: $newCode'),
-                          backgroundColor: Colors.green,
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    },
+                    ),
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 8),
               Text(
-                'Generate single-use VIP promo codes for special agents. Each code can be redeemed only 1 time for free Platinum membership.',
+                'Generate 1-Time single-use VIP promo codes for special agents. Each code can be redeemed only 1 time for free Platinum membership.',
                 style: TextStyle(color: isDark ? Colors.white60 : Colors.black54, fontSize: 12),
+              ),
+              const SizedBox(height: 14),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFFFC107),
+                  minimumSize: const Size(double.infinity, 44),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                icon: const Icon(Icons.add_circle, color: Colors.black, size: 20),
+                label: const Text(
+                  '➕ Generate New 1-Time VIP Pass Code',
+                  style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+                onPressed: () {
+                  final newCode = state.generateVipCode();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('🎉 Generated New VIP Pass Code: $newCode'),
+                      backgroundColor: Colors.green,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: 16),
               if (state.vipCodes.isEmpty)
                 Text('No VIP codes generated yet.', style: TextStyle(color: isDark ? Colors.white38 : Colors.black38, fontSize: 12))
               else
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: state.vipCodes.map((vip) {
-                    return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: vip.isUsed ? Colors.red.withOpacity(0.1) : const Color(0xFF10B981).withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: vip.isUsed ? Colors.red.withOpacity(0.3) : const Color(0xFF10B981).withOpacity(0.5)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(vip.isUsed ? Icons.check_circle : Icons.key, size: 16, color: vip.isUsed ? Colors.red : const Color(0xFF10B981)),
-                          const SizedBox(width: 6),
-                          SelectableText(
-                            vip.code,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                              color: vip.isUsed ? Colors.red : (isDark ? Colors.white : Colors.black87),
-                              decoration: vip.isUsed ? TextDecoration.lineThrough : null,
-                            ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'ACTIVE & REDEEMED VIP CODES (${state.vipCodes.length}):',
+                      style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.8),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: state.vipCodes.map((vip) {
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: vip.isUsed ? Colors.red.withOpacity(0.1) : const Color(0xFF10B981).withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: vip.isUsed ? Colors.red.withOpacity(0.3) : const Color(0xFF10B981).withOpacity(0.5)),
                           ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: vip.isUsed ? Colors.red.withOpacity(0.2) : const Color(0xFF10B981).withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              vip.isUsed ? 'USED (${vip.usedByName ?? "Redeemed"})' : 'ACTIVE (1-TIME USE)',
-                              style: TextStyle(
-                                fontSize: 9,
-                                fontWeight: FontWeight.bold,
-                                color: vip.isUsed ? Colors.red : const Color(0xFF10B981),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(vip.isUsed ? Icons.check_circle : Icons.key, size: 15, color: vip.isUsed ? Colors.red : const Color(0xFF10B981)),
+                              const SizedBox(width: 6),
+                              SelectableText(
+                                vip.code,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12.5,
+                                  color: vip.isUsed ? Colors.red : (isDark ? Colors.white : Colors.black87),
+                                  decoration: vip.isUsed ? TextDecoration.lineThrough : null,
+                                ),
                               ),
-                            ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: vip.isUsed ? Colors.red.withOpacity(0.2) : const Color(0xFF10B981).withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  vip.isUsed ? 'USED (${vip.usedByName ?? "Redeemed"})' : 'ACTIVE (1-TIME USE)',
+                                  style: TextStyle(
+                                    fontSize: 8.5,
+                                    fontWeight: FontWeight.bold,
+                                    color: vip.isUsed ? Colors.red : const Color(0xFF10B981),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    );
-                  }).toList(),
+                        );
+                      }).toList(),
+                    ),
+                  ],
                 ),
             ],
           ),
