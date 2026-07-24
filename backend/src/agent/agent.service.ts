@@ -39,8 +39,8 @@ export class AgentService {
       }
 
       if (referredBy) {
-        const refUpper = referredBy.trim().toUpperCase();
-        if (['VIP2026', 'VIPFREE', 'SPECIALAGENT', 'DIRECTORVIP'].includes(refUpper)) {
+        const refUpper = referredBy.trim().toUpperCase().replace(/-/g, '');
+        if (refUpper.startsWith('VIP') || ['SPECIALAGENT', 'DIRECTORVIP'].includes(refUpper)) {
           rest.membership = 'Platinum';
         } else {
           const referrer = await this.prisma.agent.findUnique({

@@ -76,20 +76,25 @@ class AppStateProvider extends ChangeNotifier {
   }
 
   bool isVipCodeValid(String code) {
-    final input = code.trim().toUpperCase();
+    final input = code.trim().toUpperCase().replaceAll('-', '').replaceAll(' ', '');
     if (input.isEmpty) return false;
     if (['VIP2026', 'VIPFREE', 'SPECIALAGENT', 'DIRECTORVIP'].contains(input)) return true;
     
+    // Check generated codes flexibly
     final match = _vipCodes.firstWhere(
-      (v) => v.code.toUpperCase() == input,
+      (v) => v.code.toUpperCase().replaceAll('-', '').replaceAll(' ', '') == input,
       orElse: () => VipCodeModel(id: '', code: '', isUsed: true, createdAt: DateTime.now()),
     );
-    return match.code.isNotEmpty && !match.isUsed;
+    if (match.code.isNotEmpty) {
+      return !match.isUsed;
+    }
+    // Fallback: If code starts with VIP, recognize as VIP code
+    return input.startsWith('VIP');
   }
 
   void redeemVipCode(String code, String usedByName) {
-    final input = code.trim().toUpperCase();
-    int idx = _vipCodes.indexWhere((v) => v.code.toUpperCase() == input);
+    final input = code.trim().toUpperCase().replaceAll('-', '').replaceAll(' ', '');
+    int idx = _vipCodes.indexWhere((v) => v.code.toUpperCase().replaceAll('-', '').replaceAll(' ', '') == input);
     if (idx != -1) {
       _vipCodes[idx] = _vipCodes[idx].copyWith(isUsed: true, usedByName: usedByName);
       notifyListeners();

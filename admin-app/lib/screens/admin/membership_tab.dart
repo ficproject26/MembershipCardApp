@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared/shared.dart';
 
@@ -9,6 +10,8 @@ class AdminMembershipTab extends StatelessWidget {
   Widget build(BuildContext context) {
     final state = Provider.of<AppStateProvider>(context);
     final isDark = state.isDarkMode;
+    final activeCount = state.vipCodes.where((v) => !v.isUsed).length;
+    final usedCount = state.vipCodes.where((v) => v.isUsed).length;
 
     return ListView(
       physics: const BouncingScrollPhysics(),
@@ -72,52 +75,113 @@ class AdminMembershipTab extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'ACTIVE & REDEEMED VIP CODES (${state.vipCodes.length}):',
-                      style: TextStyle(color: isDark ? Colors.white54 : Colors.black54, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'TOTAL CODES: ${state.vipCodes.length}',
+                          style: TextStyle(color: isDark ? Colors.white70 : Colors.black87, fontSize: 11, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                        ),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(color: const Color(0xFF10B981).withOpacity(0.2), borderRadius: BorderRadius.circular(4)),
+                              child: Text('🟢 Active: $activeCount', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF10B981))),
+                            ),
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(color: Colors.red.withOpacity(0.2), borderRadius: BorderRadius.circular(4)),
+                              child: Text('🔴 Used: $usedCount', style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.redAccent)),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
+                    const SizedBox(height: 10),
+                    Column(
                       children: state.vipCodes.map((vip) {
                         return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                           decoration: BoxDecoration(
-                            color: vip.isUsed ? Colors.red.withOpacity(0.1) : const Color(0xFF10B981).withOpacity(0.15),
+                            color: vip.isUsed ? Colors.red.withOpacity(0.08) : const Color(0xFF10B981).withOpacity(0.12),
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(color: vip.isUsed ? Colors.red.withOpacity(0.3) : const Color(0xFF10B981).withOpacity(0.5)),
                           ),
                           child: Row(
-                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(vip.isUsed ? Icons.check_circle : Icons.key, size: 15, color: vip.isUsed ? Colors.red : const Color(0xFF10B981)),
-                              const SizedBox(width: 6),
-                              SelectableText(
-                                vip.code,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12.5,
-                                  color: vip.isUsed ? Colors.red : (isDark ? Colors.white : Colors.black87),
-                                  decoration: vip.isUsed ? TextDecoration.lineThrough : null,
-                                ),
+                              Icon(
+                                vip.isUsed ? Icons.cancel_outlined : Icons.check_circle_outline,
+                                size: 18,
+                                color: vip.isUsed ? Colors.redAccent : const Color(0xFF10B981),
                               ),
                               const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: vip.isUsed ? Colors.red.withOpacity(0.2) : const Color(0xFF10B981).withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  vip.isUsed ? 'USED (${vip.usedByName ?? "Redeemed"})' : 'ACTIVE (1-TIME USE)',
-                                  style: TextStyle(
-                                    fontSize: 8.5,
-                                    fontWeight: FontWeight.bold,
-                                    color: vip.isUsed ? Colors.red : const Color(0xFF10B981),
-                                  ),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    SelectableText(
+                                      vip.code,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 14,
+                                        color: vip.isUsed ? Colors.redAccent : (isDark ? Colors.white : Colors.black87),
+                                        decoration: vip.isUsed ? TextDecoration.lineThrough : null,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      vip.isUsed
+                                          ? '❌ USED BY: ${vip.usedByName ?? "Redeemed Member"}'
+                                          : '🟢 UNUSED (READY TO SHARE)',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        color: vip.isUsed ? Colors.redAccent : const Color(0xFF10B981),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
+                              if (!vip.isUsed)
+                                InkWell(
+                                  onTap: () {
+                                    Clipboard.setData(ClipboardData(text: vip.code));
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('📋 Copied ${vip.code} to clipboard!'),
+                                        backgroundColor: Colors.green,
+                                        duration: const Duration(seconds: 2),
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF10B981),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: const Row(
+                                      children: [
+                                        Icon(Icons.copy, size: 12, color: Colors.black),
+                                        SizedBox(width: 4),
+                                        Text('COPY', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black)),
+                                      ],
+                                    ),
+                                  ),
+                                )
+                              else
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: const Text('REDEEMED', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.redAccent)),
+                                ),
                             ],
                           ),
                         );
