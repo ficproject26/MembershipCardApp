@@ -950,9 +950,9 @@ class _AgentDashboardTabState extends State<AgentDashboardTab>
           _earningDivider(isDark),
           _earningRow('📈 Total Lifetime Earnings', '₹${_formatAmount(agent.totalEarnings)}', Colors.green, isDark),
           _earningDivider(isDark),
-          _earningRow('🔗 Direct Commissions', '₹${_formatAmount(agent.totalEarnings * 0.75)}', Colors.orange, isDark),
+          _earningRow('🔗 Direct Service Commissions', '₹${_formatAmount(agent.totalEarnings * 0.80)}', Colors.orange, isDark),
           _earningDivider(isDark),
-          _earningRow('🌐 Network Commissions', '₹${_formatAmount(agent.totalEarnings * 0.25)}', const Color(0xFF7B61FF), isDark),
+          _earningRow('🎁 App Referral Bonus', '₹${_formatAmount(agent.totalEarnings * 0.20)}', const Color(0xFF7B61FF), isDark),
         ],
       ),
     );

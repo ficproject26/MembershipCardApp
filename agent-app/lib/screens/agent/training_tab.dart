@@ -34,7 +34,7 @@ class AgentTrainingTab extends StatelessWidget {
         icon: Icons.policy,
       ),
       _CourseItem(
-        title: 'Growing Your Level-2 Indirect Network',
+        title: 'Earning Direct App Referral Bonuses',
         category: 'Referral Marketing',
         duration: '30 mins',
         progress: 0.0,
